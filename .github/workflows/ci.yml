@@ -9,18 +9,22 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup Node JS
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: 18.x
           cache: yarn
 
       - run: yarn install --ignore-engines
       - run: yarn lint:nofix
+      - run: yarn typecheck
       - run: yarn test:cov
+      - run: yarn build
+      - run: yarn build-storybook --quiet
       - uses: paambaati/codeclimate-action@v3.0.0
-        env:
-          CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
+        if: env.CC_TEST_REPORTER_ID != ''

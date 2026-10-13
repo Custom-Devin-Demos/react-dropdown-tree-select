@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "es2019",
+    "lib": ["dom", "dom.iterable", "es2019"],
+    "module": "esnext",
+    "moduleResolution": "node",
+    "jsx": "react",
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "react-dropdown-tree-select": ["src/index.tsx"]
+    }
+  },
+  "include": ["src", "types-test"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/tests/**", "src/a11y/a11y.utils.ts"]
+}
