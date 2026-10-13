@@ -67,6 +67,8 @@ A lightweight and fast control to render a select component that can display hie
   - [inlineSearchInput](#inlinesearchinput)
   - [tabIndex](#tabIndex)
   - [disablePoppingOnBackspace](#disablePoppingOnBackspace)
+  - [loadChildren](#loadchildren)
+  - [onLoadChildrenError](#onloadchildrenerror)
 - [Styling and Customization](#styling-and-customization)
   - [Using default styles](#default-styles)
   - [Customizing with Bootstrap, Material Design styles](#customizing-styles)
@@ -129,7 +131,7 @@ Visit [unpkg.com](https://unpkg.com/#/) to see other options.
 
 ### Peer Dependencies
 
-In order to avoid version conflicts in your project, you must specify and install [react](https://www.npmjs.com/package/react), [react-dom](https://www.npmjs.com/package/react-dom) as [peer dependencies](https://nodejs.org/en/blog/npm/peer-dependencies/). Note that NPM(version 4-6) doesn't install peer dependencies automatically. Instead it will show you a warning message with instructions on how to install them. If using Npm 7.X.X version, peer dependencies will be installed automatically.
+In order to avoid version conflicts in your project, you must specify and install [react](https://www.npmjs.com/package/react), [react-dom](https://www.npmjs.com/package/react-dom) as [peer dependencies](https://nodejs.org/en/blog/npm/peer-dependencies/). Supported versions are React and ReactDOM `^16.8.0 || ^17.0.0 || ^18.0.0` (the component is built with hooks, and is `StrictMode` and concurrent rendering safe on React 18). Note that NPM(version 4-6) doesn't install peer dependencies automatically. Instead it will show you a warning message with instructions on how to install them. If using Npm 7.X.X version, peer dependencies will be installed automatically.
 
 If you're using the UMD builds, you'd also need to install the peer dependencies in your application:
 
@@ -276,6 +278,7 @@ Data for rendering the tree select items. The object requires the following stru
   dataset,        // optional: Allows data-* attributes to be set on the node and tag elements
   isDefaultValue, // optional: Indicate if a node is a default value. When true, the dropdown will automatically select the node(s) when there is no other selected node. Can be used on more than one node.
   tagLabel,       // optional: tag label in case you need it to differ from the checkbox label
+  hasChildren,    // optional: If true, the node is expandable even without `children`; they are fetched with `loadChildren` on first expand
   ...             // optional: Any extra properties that you'd like to receive during `onChange` event
 }
 ```
@@ -306,6 +309,7 @@ The `texts` object requires the following structure:
   noMatches,                // optional: The text to display when the search does not find results in the content list. Defaults to `No matches found`
   label,                    // optional: Adds `aria-labelledby` to search input when input starts with `#`, adds `aria-label` to search input when label has value (not containing '#')
   labelRemove,              // optional: The text to display for `aria-label` on tag delete buttons which is combined with `aria-labelledby` pointing to the node label. Defaults to `Remove`
+  loadingChildren,          // optional: The text to display while the children of a node are being loaded with `loadChildren`. Defaults to `Loading...`
 }
 ```
 
@@ -428,6 +432,45 @@ Type: `bool` (default: `false`)
 
 `disablePoppingOnBackspace=true` attribute indicates that when a user triggers a 'backspace' keyDown in the empty search bar, the tree will not deselect nodes.
 
+### loadChildren
+
+Type: `(node: TreeNode) => Promise<TreeNodeProps[]>`
+
+Loads the children of nodes flagged with `hasChildren: true` the first time they are expanded (by clicking the toggle, `ArrowRight`, or because the node starts with `expanded: true`). Use it for trees that are too large or too expensive to fetch up front.
+
+```jsx
+const data = [
+  { label: 'Europe', value: 'europe', hasChildren: true },
+  { label: 'Asia', value: 'asia', hasChildren: true },
+]
+
+const loadChildren = node => fetch(`/api/regions/${node.value}/children`).then(res => res.json())
+
+<DropdownTreeSelect
+  data={data}
+  loadChildren={loadChildren}
+  onLoadChildrenError={(node, error) => console.error(`Could not load ${node.label}`, error)}
+  texts={{ loadingChildren: 'Fetching...' }}
+/>
+```
+
+- `loadChildren` is called at most once per node at a time; once it resolves the node is not loaded again (unless `data` is replaced).
+- While pending, the node is shown expanded with the `loading` class, `aria-busy="true"` and the `texts.loadingChildren` text (default `Loading...`).
+- The resolved nodes are inserted under the expanded node with the same id scheme as `data` (`<parentId>-<index>` unless the node has an `id`) and may themselves have `children` or `hasChildren`.
+- Selection follows the current `mode`: in `multiSelect`, children of a checked parent are checked (explicit `checked`/`isDefaultValue` values on the loaded nodes are honoured and the ancestors are re-evaluated, including the partial state with `showPartiallySelected`); `hierarchical` does not inherit anything; in `radioSelect` a loaded `checked`/`isDefaultValue` node is only selected when nothing else is selected yet. `onChange` is not fired for these changes. `hasChildren` has no effect in `simpleSelect`.
+- If the promise rejects (or `loadChildren` throws), the node collapses again, gets the `load-error` class and `onLoadChildrenError(node, error)` is called. Expanding it again retries the load.
+- Results are ignored when the component unmounted or `data` was replaced in the meantime.
+- `onNodeToggle` keeps firing on every expand/collapse.
+- Search only covers nodes that have been loaded.
+
+Without `loadChildren`, `hasChildren` nodes simply toggle their expanded state.
+
+### onLoadChildrenError
+
+Type: `(node: TreeNode, error: unknown) => void`
+
+Fires when the promise returned by [`loadChildren`](#loadchildren) rejects.
+
 ## Styling and Customization
 
 ### Default styles
@@ -511,12 +554,28 @@ The dropdown renders only visible content and skips any nodes that are going to 
 
 ~~Planned feature: Use [react-virtualized](https://github.com/bvaughn/react-virtualized) to take this to the next level.~~ The search tree now uses infinite scroll, limiting search results to 100 items initially (more load seamlessly as you scroll) - this results in super fast rendering even with large number of nodes (see [#80](https://github.com/dowjones/react-dropdown-tree-select/issues/80)).
 
+### Avoiding re-initialization on parent re-renders
+
+The component builds its internal tree state from `data` once and only rebuilds it when `data` (by reference), `mode`, `showPartiallySelected`, `searchPredicate` or `id` change. Re-rendering the parent with the same `data` reference is cheap and keeps the internal state (expanded nodes, search, keyboard focus) intact.
+
+Passing a new `data` reference (e.g. building the array inline in `render`) re-initializes the tree from the new data: checked/expanded state is taken from the new data, while the keyboard focus is preserved. Keep `data` referentially stable (e.g. with `useMemo` or state) when the tree has not changed.
+
+> Prior to the hooks rewrite, the component rebuilt its tree on every parent re-render regardless of whether `data` changed.
+
 ### Reducing costly DOM manipulations
 
 The tree tries to minimize the DOM manipulations as much as possible. E.g., during searching, the non-matching nodes are simply `hidden` and css adjusted on remaining to create the perception of a new filtered list.
 Node toggling also achieves the expand/collapse effect by manipulating css classes instead of creating new tree with filtered out nodes.
 
 ## FAQ
+
+### Why do generated ids look different on React 18?
+
+When no `id` prop is passed, an id is generated for each instance and used as a prefix for node ids (`<id>-0`, `<id>-0-1`, ...). On React 18 it is derived from [`React.useId`](https://react.dev/reference/react/useId) (e.g. `rdtsr0`), which keeps ids stable between server rendering and hydration. On React 16.8/17 the previous incremental format (`rdts1`, `rdts2`, ...) is used. Pass an explicit `id` if you need predictable ids.
+
+### Can I still access the instance via `ref`?
+
+Yes. The component is a function component, but a `ref` still exposes the previously public instance members: `node` (the root element), `searchInput`, `keepDropdownActive` and `handleClick()` (toggles the dropdown).
 
 ### How do I change the placeholder text?
 

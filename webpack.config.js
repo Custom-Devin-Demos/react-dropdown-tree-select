@@ -1,12 +1,11 @@
 const path = require('path')
 const webpack = require('webpack')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
-const CopyPlugin = require('copy-webpack-plugin')
 const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
 
 module.exports = {
   devtool: 'source-map',
-  entry: { 'react-dropdown-tree-select': './src/index.js' },
+  entry: { 'react-dropdown-tree-select': './src/index.tsx' },
   output: {
     path: path.join(__dirname, 'dist'),
     filename: '[name].js',
@@ -14,6 +13,9 @@ module.exports = {
     library: 'ReactDropdownTreeSelect',
     umdNamedDefine: true,
     globalObject: 'this',
+  },
+  resolve: {
+    extensions: ['.tsx', '.ts', '.js', '.json'],
   },
   externals: {
     react: {
@@ -36,12 +38,11 @@ module.exports = {
       openAnalyzer: false,
       generateStatsFile: true,
     }),
-    new CopyPlugin({ patterns: [{ from: path.join(__dirname, 'types'), to: path.join(__dirname, 'dist') }] }),
   ],
   module: {
     rules: [
       {
-        test: /\.js$/,
+        test: /\.(js|tsx?)$/,
         use: ['babel-loader'],
         include: path.join(__dirname, 'src'),
         exclude: /node_modules/,

@@ -14,6 +14,10 @@
     cursor: not-allowed;
   }
 
+  &.load-error > label > .node-label {
+    color: #c00;
+  }
+
   &.match-in-children {
     &.hide {
       .node-label {
@@ -25,6 +29,12 @@
   &.focused {
     background-color: #f4f4f4;
   }
+}
+
+.node-loading {
+  margin-left: 4px;
+  font-style: italic;
+  color: gray;
 }
 
 .toggle {
