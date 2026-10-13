@@ -1,0 +1,74 @@
+import React, { PureComponent } from 'react'
+import PropTypes from 'prop-types'
+import Tag from '../tag'
+import { getDataset } from '../utils'
+
+import { InternalTreeNode, Mode, TextProps } from '../types'
+
+import './index.css'
+
+type OnTagRemove = (id: string, isKeyboardEvent: boolean) => void
+
+const getTags = (
+  tags: InternalTreeNode[] = [],
+  onDelete: OnTagRemove,
+  readOnly?: boolean,
+  disabled?: boolean,
+  labelRemove?: string
+) =>
+  tags.map(tag => {
+    const { _id, label, tagClassName, dataset, tagLabel } = tag
+    return (
+      <li
+        className={['tag-item', tagClassName].filter(Boolean).join(' ')}
+        key={`tag-item-${_id}`}
+        {...getDataset(dataset)}
+      >
+        <Tag
+          label={tagLabel || label}
+          id={_id}
+          onDelete={onDelete}
+          readOnly={readOnly}
+          disabled={disabled || tag.disabled}
+          labelRemove={labelRemove}
+        />
+      </li>
+    )
+  })
+
+export interface TagsProps {
+  tags?: InternalTreeNode[]
+  onTagRemove: OnTagRemove
+  readOnly?: boolean
+  disabled?: boolean
+  texts?: TextProps
+  children?: React.ReactNode
+  activeDescendant?: string
+  mode?: Mode
+  clientId?: string
+}
+
+class Tags extends PureComponent<TagsProps> {
+  static propTypes = {
+    tags: PropTypes.array,
+    onTagRemove: PropTypes.func,
+    readOnly: PropTypes.bool,
+    disabled: PropTypes.bool,
+    texts: PropTypes.object,
+    children: PropTypes.node,
+  }
+
+  render() {
+    const { tags, onTagRemove, texts = {}, disabled, readOnly, children } = this.props
+    const lastItem = children || <span className="placeholder">{texts.placeholder || 'Choose...'}</span>
+
+    return (
+      <ul className="tag-list">
+        {getTags(tags, onTagRemove, readOnly, disabled, texts.labelRemove)}
+        <li className="tag-item">{lastItem}</li>
+      </ul>
+    )
+  }
+}
+
+export default Tags

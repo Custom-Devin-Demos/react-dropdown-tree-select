@@ -4,13 +4,13 @@ const baseConfig = {
   devtool: 'eval',
   mode: 'development',
   resolve: {
-    extensions: ['.js', '.css'],
+    extensions: ['.js', '.ts', '.tsx', '.css'],
     modules: ['node_modules'],
   },
   module: {
     rules: [
       {
-        test: /\.(js|jsx)$/,
+        test: /\.(js|jsx|tsx?)$/,
         exclude: /node_modules/,
         loader: 'babel-loader',
       },
