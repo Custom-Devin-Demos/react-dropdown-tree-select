@@ -160,3 +160,18 @@ export const missingData = <DropdownTreeSelect />
 
 // @ts-expect-error mode must be one of the known modes
 export const invalidMode = <DropdownTreeSelect data={data} mode="unknown" />
+
+const lazyData: TreeNodeProps[] = [{ label: 'Lazy', value: 'lazy', hasChildren: true }]
+const loadChildren = (node: TreeNode): Promise<TreeNodeProps[]> =>
+  Promise.resolve([{ label: `${node.label} child`, value: `${node.value}-child`, hasChildren: false }])
+const lazyTexts: TextProps = { loadingChildren: 'Fetching...' }
+const lazyProps: DropdownTreeSelectProps = {
+  data: lazyData,
+  loadChildren,
+  onLoadChildrenError: (node: TreeNode, error: unknown) => void [node, error],
+  texts: lazyTexts,
+}
+export const lazyLoading = <DropdownTreeSelect {...lazyProps} />
+
+// @ts-expect-error loadChildren must return a promise
+export const syncLoadChildren = <DropdownTreeSelect data={lazyData} loadChildren={() => []} />

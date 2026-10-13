@@ -3,8 +3,16 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { isOutsideClick, useIsomorphicLayoutEffect } from '../utils'
 import TreeManager from '../tree-manager'
 import keyboardNavigation from '../tree-manager/keyboardNavigation'
+import { isLazyNode } from '../tree-manager/addChildren'
 import useClientId from './useClientId'
-import { DropdownTreeSelectProps, InternalTreeNode, NodeAction, ShowDropdownState, TreeNodeMap } from '../types'
+import {
+  DropdownTreeSelectProps,
+  InternalTreeNode,
+  NodeAction,
+  ShowDropdownState,
+  TreeNodeMap,
+  TreeNodeProps,
+} from '../types'
 
 const noop = () => {}
 
@@ -83,6 +91,8 @@ const useDropdownTreeSelect = (options: UseDropdownTreeSelectOptions) => {
     clearSearchOnChange,
     readOnly,
     disablePoppingOnBackspace = false,
+    loadChildren,
+    onLoadChildrenError,
   } = options
 
   const generatedId = useClientId()
@@ -129,6 +139,7 @@ const useDropdownTreeSelect = (options: UseDropdownTreeSelectOptions) => {
   const stateRef = useRef(state)
   const treeManagerRef = useRef(state.treeManager)
   const pendingCallbacksRef = useRef<Array<() => void>>([])
+  const mountedRef = useRef(false)
   const optionsRef = useRef({
     showDropdown: showDropdownProp,
     onChange,
@@ -143,6 +154,8 @@ const useDropdownTreeSelect = (options: UseDropdownTreeSelectOptions) => {
     mode,
     readOnly,
     disablePoppingOnBackspace,
+    loadChildren,
+    onLoadChildrenError,
   })
 
   useIsomorphicLayoutEffect(() => {
@@ -162,6 +175,8 @@ const useDropdownTreeSelect = (options: UseDropdownTreeSelectOptions) => {
       mode,
       readOnly,
       disablePoppingOnBackspace,
+      loadChildren,
+      onLoadChildrenError,
     }
   })
 
@@ -238,6 +253,47 @@ const useDropdownTreeSelect = (options: UseDropdownTreeSelectOptions) => {
       update({ tree, treeVersion: stateRef.current.treeVersion + 1 })
       const { onNodeToggle: onNodeToggleOption } = optionsRef.current
       typeof onNodeToggleOption === 'function' && onNodeToggleOption(treeManager.getNodeById(id))
+      if (treeManager.getNodeById(id).expanded) loadNodeChildren(id)
+    }
+
+    const currentTree = (treeManager: TreeManager) =>
+      (stateRef.current.searchModeOn ? treeManager.matchTree : treeManager.tree) as TreeNodeMap
+
+    function loadNodeChildren(id: string) {
+      const { loadChildren, onLoadChildrenError, mode } = optionsRef.current
+      const treeManager = treeManagerRef.current
+      const node = treeManager.getNodeById(id)
+      // in-flight loads are deduped per node; simpleSelect only renders top level nodes
+      if (typeof loadChildren !== 'function' || mode === 'simpleSelect' || node._loading || !isLazyNode(node)) return
+
+      node._loading = true
+      node._loadError = false
+      update({ treeVersion: stateRef.current.treeVersion + 1 })
+
+      // results are dropped when the component unmounted or the tree was re-created (e.g. new `data`) meanwhile
+      const isStale = () => !mountedRef.current || treeManagerRef.current !== treeManager
+
+      new Promise<TreeNodeProps[]>(resolve => resolve(loadChildren(node))).then(
+        children => {
+          if (isStale()) return
+          node._loading = false
+          const added = treeManager.addChildren(id, children || [])
+          update({
+            tree: currentTree(treeManager),
+            tags: treeManager.tags,
+            treeVersion: stateRef.current.treeVersion + 1,
+          })
+          added.forEach(child => child.expanded && loadNodeChildren(child._id))
+        },
+        error => {
+          if (isStale()) return
+          node._loading = false
+          node._loadError = true
+          treeManager.collapseChildren(node)
+          update({ tree: currentTree(treeManager), treeVersion: stateRef.current.treeVersion + 1 })
+          typeof onLoadChildrenError === 'function' && onLoadChildrenError(node, error)
+        }
+      )
     }
 
     const onCheckboxChange = (id: string, checked: boolean, callback?: (tags: InternalTreeNode[]) => void) => {
@@ -356,6 +412,7 @@ const useDropdownTreeSelect = (options: UseDropdownTreeSelectOptions) => {
     }
 
     return {
+      loadNodeChildren,
       handleClick,
       handleOutsideClick,
       onInputChange,
@@ -378,6 +435,25 @@ const useDropdownTreeSelect = (options: UseDropdownTreeSelectOptions) => {
     document.addEventListener('click', handleOutsideClick, false)
     return () => document.removeEventListener('click', handleOutsideClick, false)
   }, [showDropdown, handleOutsideClick])
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
+
+  // nodes that start out expanded (`expanded: true` + `hasChildren`) load their children right away
+  const { treeManager } = state
+  const { loadNodeChildren } = handlers
+  useEffect(() => {
+    if (typeof loadChildren !== 'function') return
+    treeManager.tree.forEach(node => {
+      if (node.expanded && isLazyNode(node)) loadNodeChildren(node._id)
+    })
+    // only when a new tree is created; later expands are handled by onNodeToggle
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [treeManager, loadNodeChildren])
 
   const { searchModeOn, currentFocus, allNodesHidden, tree, tags, treeVersion } = state
 

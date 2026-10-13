@@ -14,6 +14,7 @@ import Tags from './tags'
 import Trigger from './trigger'
 import Tree from './tree'
 import useDropdownTreeSelect from './hooks/useDropdownTreeSelect'
+import { LoadingTextContext } from './tree-node/loading-context'
 
 import './index.css'
 import { getAriaLabel } from './a11y'
@@ -130,18 +131,20 @@ const DropdownTreeSelect = forwardRef<DropdownTreeSelectHandle, DropdownTreeSele
             {allNodesHidden ? (
               <span className="no-matches">{texts.noMatches || 'No matches found'}</span>
             ) : (
-              <Tree
-                data={tree}
-                treeVersion={treeVersion}
-                keepTreeOnSearch={keepTreeOnSearch}
-                keepChildrenOnSearch={keepChildrenOnSearch}
-                searchModeOn={searchModeOn}
-                onAction={onAction}
-                onCheckboxChange={onCheckboxChange}
-                onNodeToggle={onNodeToggle}
-                showPartiallySelected={showPartiallySelected}
-                {...commonProps}
-              />
+              <LoadingTextContext.Provider value={texts.loadingChildren}>
+                <Tree
+                  data={tree}
+                  treeVersion={treeVersion}
+                  keepTreeOnSearch={keepTreeOnSearch}
+                  keepChildrenOnSearch={keepChildrenOnSearch}
+                  searchModeOn={searchModeOn}
+                  onAction={onAction}
+                  onCheckboxChange={onCheckboxChange}
+                  onNodeToggle={onNodeToggle}
+                  showPartiallySelected={showPartiallySelected}
+                  {...commonProps}
+                />
+              </LoadingTextContext.Provider>
             )}
           </div>
         )}
@@ -162,6 +165,7 @@ const propTypes = {
     noMatches: PropTypes.string,
     label: PropTypes.string,
     labelRemove: PropTypes.string,
+    loadingChildren: PropTypes.string,
   }),
   showDropdown: PropTypes.oneOf(['default', 'initial', 'always']),
   className: PropTypes.string,
@@ -179,6 +183,8 @@ const propTypes = {
   inlineSearchInput: PropTypes.bool,
   tabIndex: PropTypes.number,
   disablePoppingOnBackspace: PropTypes.bool,
+  loadChildren: PropTypes.func,
+  onLoadChildrenError: PropTypes.func,
 }
 
 DropdownTreeSelect.propTypes = propTypes as React.WeakValidationMap<

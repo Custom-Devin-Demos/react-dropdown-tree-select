@@ -3,6 +3,7 @@ import { getTagId } from '../tag'
 import { findIndex } from '../utils'
 import { InternalTreeNode, TreeNodeMap } from '../types'
 import { GetNodeById } from './nodeVisitor'
+import { isLazyNode } from './addChildren'
 
 type FocusNode = InternalTreeNode | undefined | null
 
@@ -76,7 +77,7 @@ const getLeftNavAction = (currentFocus: FocusNode, key: string): NavAction => {
 }
 
 const getRightNavAction = (currentFocus: FocusNode, key: string): NavAction => {
-  if (!currentFocus || !currentFocus._children || key !== Keys.Right) {
+  if (!currentFocus || !(currentFocus._children || isLazyNode(currentFocus)) || key !== Keys.Right) {
     return NavActions.None
   }
 
