@@ -1,0 +1,8 @@
+import { Markdown, Meta } from '@storybook/blocks'
+
+import HOCReadme from '../docs/HOC.md?raw'
+import { prepareMarkdown } from './utils/markdown'
+
+<Meta title="Guides/HOC" />
+
+<Markdown>{prepareMarkdown(HOCReadme)}</Markdown>

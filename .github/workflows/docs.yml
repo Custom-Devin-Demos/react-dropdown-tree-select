@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
+      - 'stories/**'
+      - '.storybook/**'
       - package.json
       - README.md
 
@@ -24,13 +26,12 @@ jobs:
 
       - name: Build Docs 📚
         run: |
-          # un-ignore bundle.js
-          mv docs/.gitignore .gitignore
           yarn install --ignore-engines
           yarn build:docs
+          touch docs-dist/.nojekyll
       - name: Deploy Pages 🚀
         uses: JamesIves/github-pages-deploy-action@releases/v3
         with:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
           BRANCH: gh-pages
-          FOLDER: docs
+          FOLDER: docs-dist

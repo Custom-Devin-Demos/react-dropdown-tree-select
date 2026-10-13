@@ -25,5 +25,6 @@ jobs:
       - run: yarn typecheck
       - run: yarn test:cov
       - run: yarn build
+      - run: yarn build-storybook --quiet
       - uses: paambaati/codeclimate-action@v3.0.0
         if: env.CC_TEST_REPORTER_ID != ''
