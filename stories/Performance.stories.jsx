@@ -6,7 +6,7 @@ import bigData from './data/big-data.json'
 import generateLargeTree, { countNodes } from '../src/tree/generateLargeTree'
 
 const meta = {
-  title: 'Performance',
+  title: 'Performance/Virtualization',
   component: DropdownTreeSelect,
   argTypes: {
     ...hiddenArgTypes,
@@ -37,14 +37,14 @@ const HugeTree = ({ expanded, ...args }) => {
 }
 
 export const Virtualized100k = {
-  name: '100k nodes (virtualized)',
+  name: '100k Nodes (virtualized)',
   args: { expanded: true, texts: { placeholder: 'Search 100k nodes...' } },
   argTypes: { expanded: { control: 'boolean', description: 'Generate the tree fully expanded' } },
   render: args => <HugeTree {...args} />,
 }
 
 export const SideBySide15k = {
-  name: '15k nodes: virtualized vs. infinite scroll',
+  name: '15k Nodes: Virtualized vs. Infinite Scroll',
   render: ({ virtualized, ...args }) => (
     <div>
       <h1>15k+ nodes side by side</h1>

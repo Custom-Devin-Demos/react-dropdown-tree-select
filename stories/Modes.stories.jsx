@@ -5,7 +5,7 @@ import { actionArgs, hiddenArgTypes } from './actions'
 import data from './data/simple.json'
 
 const meta = {
-  title: 'Modes',
+  title: 'Modes/Select Modes',
   component: DropdownTreeSelect,
   argTypes: {
     ...hiddenArgTypes,

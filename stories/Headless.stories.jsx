@@ -6,7 +6,7 @@ import data from './data/simple.json'
 import './headless.css'
 
 const meta = {
-  title: 'Headless',
+  title: 'Headless/Headless API',
   component: DropdownTreeSelectUnstyled,
   argTypes: { ...hiddenArgTypes },
   args: { ...actionArgs(), data },
@@ -15,7 +15,7 @@ const meta = {
 export default meta
 
 export const UnstyledComponent = {
-  name: 'Unstyled component',
+  name: 'Unstyled Component',
   args: {
     texts: { placeholder: 'Search...' },
     classNames: {

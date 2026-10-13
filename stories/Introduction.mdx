@@ -1,0 +1,71 @@
+import { Meta } from '@storybook/blocks'
+
+<Meta title="Introduction" />
+
+export const Link = ({ to, children }) => (
+  <a href={`./?path=${to}`} target="_top">
+    {children}
+  </a>
+)
+
+# react-dropdown-tree-select
+
+A lightweight and fast select component for hierarchical tree data, with tags (pills), search, partial selection and
+keyboard navigation. Written in TypeScript, built with hooks and `StrictMode` safe on React 18
+(React `^16.8 || ^17 || ^18`).
+
+```bash
+npm i react-dropdown-tree-select
+```
+
+```tsx
+import DropdownTreeSelect, { TreeNode } from 'react-dropdown-tree-select'
+import 'react-dropdown-tree-select/styles.css'
+
+const onChange = (currentNode: TreeNode, selectedNodes: TreeNode[]) => console.log(currentNode, selectedNodes)
+
+export const App = () => <DropdownTreeSelect data={data} onChange={onChange} />
+```
+
+## Guides
+
+- <Link to="/docs/guides-readme--docs">README</Link>: install, usage, TypeScript, every prop, styling, headless API, FAQ
+- <Link to="/docs/guides-migration-v2-to-v3--docs">Migration (v2 to v3)</Link>: React peer range, re-render semantics,
+  ref, types, `exports` map
+- <Link to="/docs/guides-hoc--docs">HOC</Link>: doing more with higher order components
+- <Link to="/docs/guides-codesandbox-examples--docs">CodeSandbox Examples</Link>: Bootstrap, Material Design and more
+
+## Examples
+
+- <Link to="/story/examples-basic-no-extra-styles--basic">Basic (no extra styles)</Link>
+- <Link to="/story/examples-options--options">Options</Link>: toggle every prop in the Controls panel (
+  <Link to="/docs/examples-options--docs">docs</Link>)
+- <Link to="/story/examples-default-values--default-values">Default Values</Link>
+- <Link to="/story/examples-large-tree--large-tree">Large Tree</Link> (15k+ nodes)
+- <Link to="/story/examples-keyboard-navigation--keyboard-navigation">Keyboard Navigation</Link>
+
+## Modes
+
+- <Link to="/story/modes-select-modes--multi-select">multiSelect</Link> (default)
+- <Link to="/story/modes-select-modes--hierarchical">hierarchical</Link>
+- <Link to="/story/modes-select-modes--simple-select">simpleSelect</Link>
+- <Link to="/story/modes-select-modes--radio-select">radioSelect</Link>
+
+## Features
+
+- <Link to="/story/features-lazy-loading--lazy-loading">Lazy Loading</Link> with `loadChildren` / `hasChildren`, and <Link to="/story/features-lazy-loading--with-random-failures">
+    With Random Failures
+  </Link> (`onLoadChildrenError`)
+- <Link to="/story/features-combined--virtualized-lazy-loading">Combined: Virtualized + Lazy Loading (100k Nodes)</Link>
+
+## Headless
+
+- <Link to="/story/headless-headless-api--unstyled-component">Unstyled Component</Link>: `DropdownTreeSelectUnstyled` +
+  `classNames`, no CSS imported
+- <Link to="/story/headless-headless-api--custom-ui">Custom UI with useDropdownTreeSelect</Link>: build your own markup
+  with the hook and prop getters
+
+## Performance
+
+- <Link to="/story/performance-virtualization--virtualized-100-k">100k Nodes (virtualized)</Link>
+- <Link to="/story/performance-virtualization--side-by-side-15-k">15k Nodes: Virtualized vs. Infinite Scroll</Link>

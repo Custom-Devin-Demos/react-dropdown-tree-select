@@ -11,7 +11,16 @@ const preview = {
     },
     options: {
       storySort: {
-        order: ['Introduction', 'Guides', ['HOC', 'CodeSandbox Examples'], 'Examples', 'Modes'],
+        order: [
+          'Introduction',
+          'Guides',
+          ['README', 'Migration (v2 to v3)', 'HOC', 'CodeSandbox Examples'],
+          'Examples',
+          'Modes',
+          'Features',
+          'Headless',
+          'Performance',
+        ],
       },
     },
   },

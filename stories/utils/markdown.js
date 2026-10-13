@@ -18,3 +18,18 @@ export const prepareMarkdown = source => {
     .replace(/<table>/g, '<table><tbody>')
     .replace(/<\/table>/g, '</tbody></table>')
 }
+
+const STORYBOOK_URL = 'https://dowjones.github.io/react-dropdown-tree-select/'
+const LOCAL_DOCS = {
+  '/docs/HOC.md': 'guides-hoc--docs',
+  'MIGRATION.md': 'guides-migration-v2-to-v3--docs',
+  '/MIGRATION.md': 'guides-migration-v2-to-v3--docs',
+}
+
+// Links from the README to the hosted Storybook (or to docs rendered in Storybook) stay inside the current Storybook
+export const toStorybookPath = href => {
+  if (!href) return undefined
+  if (LOCAL_DOCS[href]) return `./?path=/docs/${LOCAL_DOCS[href]}`
+  if (href.startsWith(STORYBOOK_URL)) return `./${href.slice(STORYBOOK_URL.length)}`
+  return undefined
+}

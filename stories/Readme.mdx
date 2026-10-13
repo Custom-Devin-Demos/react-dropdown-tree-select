@@ -1,14 +1,15 @@
 import { Markdown, Meta } from '@storybook/blocks'
 
 import Readme from '../README.md?raw'
-import { prepareMarkdown } from './utils/markdown'
+import { prepareMarkdown, toStorybookPath } from './utils/markdown'
 
-<Meta title="Introduction" />
+<Meta title="Guides/README" />
 
 export const DocsLink = ({ href, children, ...props }) => {
-  if (href === '/docs/HOC.md') {
+  const local = toStorybookPath(href)
+  if (local) {
     return (
-      <a href="./?path=/docs/guides-hoc--docs" target="_top" {...props}>
+      <a href={local} target="_top" {...props}>
         {children}
       </a>
     )

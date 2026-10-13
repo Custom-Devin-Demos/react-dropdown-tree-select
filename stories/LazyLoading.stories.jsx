@@ -29,7 +29,7 @@ const createLoader =
     })
 
 const meta = {
-  title: 'Features/Lazy loading',
+  title: 'Features/Lazy Loading',
   component: DropdownTreeSelect,
   argTypes: {
     ...hiddenArgTypes,
@@ -70,12 +70,12 @@ const LazyLoadingExample = ({ latency, randomFailures, ...args }) => {
 }
 
 export const LazyLoading = {
-  name: 'Lazy loading',
+  name: 'Lazy Loading',
   render: args => <LazyLoadingExample {...args} />,
 }
 
 export const WithRandomFailures = {
-  name: 'With random failures',
+  name: 'With Random Failures',
   args: { randomFailures: true, latency: 600 },
   render: args => <LazyLoadingExample {...args} />,
 }
