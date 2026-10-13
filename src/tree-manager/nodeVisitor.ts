@@ -1,11 +1,12 @@
 import { isEmpty } from '../utils'
 import { InternalTreeNode, TreeNodeMap } from '../types'
 
-export type Visited = Record<string, boolean>
+// a Set stays fast with 100k+ ids, unlike an object used as a dictionary
+export type Visited = Set<string>
 export type GetNodeById = (id: string) => InternalTreeNode
 
 const markSubTreeVisited = (node: InternalTreeNode, visited: Visited, getItemById: GetNodeById): void => {
-  visited[node._id] = true
+  visited.add(node._id)
   if (!isEmpty(node._children)) {
     node._children!.forEach(c => markSubTreeVisited(getItemById(c), visited, getItemById))
   }
@@ -16,16 +17,16 @@ const getNodesMatching = (
   nodePredicate: (node: InternalTreeNode, key: string, visited: Visited) => boolean | undefined
 ): InternalTreeNode[] => {
   const nodes: InternalTreeNode[] = []
-  const visited: Visited = {}
+  const visited: Visited = new Set()
 
   tree.forEach((node, key) => {
-    if (visited[key]) return
+    if (visited.has(key)) return
 
     if (nodePredicate(node, key, visited)) {
       nodes.push(node)
     }
 
-    visited[key] = true
+    visited.add(key)
   })
 
   return nodes

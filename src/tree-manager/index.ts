@@ -1,6 +1,7 @@
 import getPartialState from './getPartialState'
 import { isEmpty } from '../utils'
 import flattenTree from './flatten-tree'
+import cloneTree from './cloneTree'
 import nodeVisitor from './nodeVisitor'
 import keyboardNavigation, { FocusActionNames } from './keyboardNavigation'
 import { InternalTreeNode, Mode, TreeData, TreeNode, TreeNodeMap } from '../types'
@@ -35,7 +36,7 @@ class TreeManager {
     this.hierarchical = mode === 'hierarchical'
     this.searchPredicate = searchPredicate
     const { list, defaultValues, singleSelectedNode } = flattenTree({
-      tree: JSON.parse(JSON.stringify(data)),
+      tree: cloneTree(data),
       simple: this.simpleSelect,
       radio: this.radioSelect,
       showPartialState: showPartiallySelected,
@@ -96,10 +97,10 @@ class TreeManager {
     }
   }
 
-  addChildrenToTree(ids: string[] | undefined, tree: TreeNodeMap, matches?: string[]): void {
+  addChildrenToTree(ids: string[] | undefined, tree: TreeNodeMap, matches?: string[] | Set<string>): void {
     if (ids !== undefined) {
       ids.forEach(id => {
-        if (matches && matches.includes(id)) {
+        if (matches && (matches instanceof Set ? matches.has(id) : matches.includes(id))) {
           // if a child is found by search anyways, don't display it as a child here
           return
         }
@@ -115,6 +116,7 @@ class TreeManager {
     const matches = this.getMatches(searchTerm.toLowerCase())
 
     const matchTree: TreeNodeMap = new Map()
+    const matchIds = keepTreeOnSearch && keepChildrenOnSearch ? new Set(matches) : undefined
 
     matches.forEach(m => {
       const node = this.getNodeById(m)
@@ -130,7 +132,7 @@ class TreeManager {
       matchTree.set(m, node)
       if (keepTreeOnSearch && keepChildrenOnSearch) {
         // add children nodes after a found match
-        this.addChildrenToTree(node._children, matchTree, matches)
+        this.addChildrenToTree(node._children, matchTree, matchIds)
       }
     })
 

@@ -46,6 +46,7 @@ const DropdownTreeSelect = forwardRef<DropdownTreeSelectHandle, DropdownTreeSele
     keepTreeOnSearch,
     keepChildrenOnSearch,
     showPartiallySelected,
+    virtualized,
   } = props
 
   const {
@@ -140,6 +141,7 @@ const DropdownTreeSelect = forwardRef<DropdownTreeSelectHandle, DropdownTreeSele
                 onCheckboxChange={onCheckboxChange}
                 onNodeToggle={onNodeToggle}
                 showPartiallySelected={showPartiallySelected}
+                virtualized={virtualized}
                 {...commonProps}
               />
             )}
@@ -179,6 +181,10 @@ const propTypes = {
   inlineSearchInput: PropTypes.bool,
   tabIndex: PropTypes.number,
   disablePoppingOnBackspace: PropTypes.bool,
+  virtualized: PropTypes.oneOfType([
+    PropTypes.bool,
+    PropTypes.shape({ itemHeight: PropTypes.number, overscan: PropTypes.number, height: PropTypes.number }),
+  ]),
 }
 
 DropdownTreeSelect.propTypes = propTypes as React.WeakValidationMap<

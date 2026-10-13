@@ -23,6 +23,8 @@ export interface TreeNodeComponentProps extends InternalTreeNode {
   readOnly?: boolean
   clientId?: string
   activeDescendant?: string
+  /** Extra attributes for the rendered `li` (set by the virtualized tree: measuring ref, position, aria-setsize...) */
+  liProps?: React.ComponentPropsWithRef<'li'> & { 'data-index'?: number }
 }
 
 const isLeaf = (children?: string[]) => isEmpty(children)
@@ -108,14 +110,23 @@ const TreeNode = (props: TreeNodeComponentProps) => {
     showPartiallySelected,
     readOnly,
     clientId,
+    liProps,
   } = props
   const liCx = getNodeCx(props)
   const style = keepTreeOnSearch || !searchModeOn ? { paddingLeft: `${(_depth || 0) * 20}px` } : {}
 
   const liId = `${_id}_li`
+  const { style: extraStyle, ...extraLiProps } = liProps || {}
 
   return (
-    <li className={liCx} style={style} id={liId} {...getDataset(dataset)} {...getAriaAttributes(props)}>
+    <li
+      className={liCx}
+      style={extraStyle ? { ...style, ...extraStyle } : style}
+      id={liId}
+      {...getDataset(dataset)}
+      {...getAriaAttributes(props)}
+      {...extraLiProps}
+    >
       <Toggle isLeaf={isLeaf(_children)} expanded={expanded} id={_id} onNodeToggle={onNodeToggle} />
       <NodeLabel
         title={title}
@@ -160,6 +171,7 @@ TreeNode.propTypes = {
   showPartiallySelected: PropTypes.bool,
   readOnly: PropTypes.bool,
   clientId: PropTypes.string,
+  liProps: PropTypes.object,
 }
 
 export default memo(TreeNode)

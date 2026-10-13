@@ -101,6 +101,21 @@ export interface DropdownTreeSelectProps {
    * search bar, the tree will not deselect nodes.
    */
   disablePoppingOnBackspace?: boolean
+  /** Renders only the rows in (and around) the viewport instead of paginating with infinite scroll.
+   * Opt-in; recommended for very large trees (10k+ visible nodes). Pass `true` for the defaults or an object
+   * to tune the estimated row height, overscan and the max height of the scrollable list.
+   * Defaults to `false`
+   */
+  virtualized?: boolean | VirtualizationOptions
+}
+
+export interface VirtualizationOptions {
+  /** Estimated row height in px, used until a row has been measured. Defaults to `32` */
+  itemHeight?: number
+  /** Number of rows rendered above and below the viewport. Defaults to `10` */
+  overscan?: number
+  /** Max height of the scrollable list in px. Defaults to `300` */
+  height?: number
 }
 
 export interface DropdownTreeSelectState {
