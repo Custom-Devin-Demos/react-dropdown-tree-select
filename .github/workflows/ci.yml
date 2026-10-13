@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
 
     steps:
       - uses: actions/checkout@v4
@@ -24,5 +26,4 @@ jobs:
       - run: yarn test:cov
       - run: yarn build
       - uses: paambaati/codeclimate-action@v3.0.0
-        env:
-          CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
+        if: env.CC_TEST_REPORTER_ID != ''
