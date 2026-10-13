@@ -1,14 +1,13 @@
 import PropTypes from 'prop-types'
-import React, { memo } from 'react'
+import React, { memo, useContext } from 'react'
 
 import { getDataset, isEmpty } from '../utils'
 import Actions from './actions'
 import NodeLabel from './node-label'
 import Toggle from './toggle'
+import ClassNamesContext from '../headless/ClassNamesContext'
 
 import { InternalTreeNode, Mode, NodeAction } from '../types'
-
-import './index.css'
 
 export interface TreeNodeComponentProps extends InternalTreeNode {
   keepTreeOnSearch?: boolean
@@ -27,7 +26,7 @@ export interface TreeNodeComponentProps extends InternalTreeNode {
 
 const isLeaf = (children?: string[]) => isEmpty(children)
 
-const getNodeCx = (props: TreeNodeComponentProps) => {
+export const getNodeCx = (props: TreeNodeComponentProps) => {
   const {
     keepTreeOnSearch,
     keepChildrenOnSearch,
@@ -62,7 +61,7 @@ const getNodeCx = (props: TreeNodeComponentProps) => {
     .join(' ')
 }
 
-const getAriaAttributes = ({
+export const getAriaAttributes = ({
   _children,
   _depth,
   checked,
@@ -109,7 +108,8 @@ const TreeNode = (props: TreeNodeComponentProps) => {
     readOnly,
     clientId,
   } = props
-  const liCx = getNodeCx(props)
+  const { node: nodeClassName } = useContext(ClassNamesContext)
+  const liCx = [getNodeCx(props), nodeClassName].filter(Boolean).join(' ')
   const style = keepTreeOnSearch || !searchModeOn ? { paddingLeft: `${(_depth || 0) * 20}px` } : {}
 
   const liId = `${_id}_li`

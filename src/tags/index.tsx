@@ -1,11 +1,10 @@
-import React, { memo } from 'react'
+import React, { memo, useContext } from 'react'
 import PropTypes from 'prop-types'
 import Tag from '../tag'
+import ClassNamesContext from '../headless/ClassNamesContext'
 import { getDataset } from '../utils'
 
 import { InternalTreeNode, Mode, TextProps } from '../types'
-
-import './index.css'
 
 type OnTagRemove = (id: string, isKeyboardEvent: boolean) => void
 
@@ -49,10 +48,11 @@ export interface TagsProps {
 }
 
 const Tags = ({ tags, onTagRemove, texts = {}, disabled, readOnly, children }: TagsProps) => {
+  const { tags: tagsClassName } = useContext(ClassNamesContext)
   const lastItem = children || <span className="placeholder">{texts.placeholder || 'Choose...'}</span>
 
   return (
-    <ul className="tag-list">
+    <ul className={tagsClassName ? `tag-list ${tagsClassName}` : 'tag-list'}>
       {getTags(tags, onTagRemove, readOnly, disabled, texts.labelRemove)}
       <li className="tag-item">{lastItem}</li>
     </ul>

@@ -15,7 +15,8 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "react-dropdown-tree-select": ["src/index.tsx"]
+      "react-dropdown-tree-select": ["src/index.tsx"],
+      "react-dropdown-tree-select/headless": ["src/headless/index.ts"]
     }
   },
   "include": ["src", "types-test"],

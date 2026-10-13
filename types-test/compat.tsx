@@ -160,3 +160,53 @@ export const missingData = <DropdownTreeSelect />
 
 // @ts-expect-error mode must be one of the known modes
 export const invalidMode = <DropdownTreeSelect data={data} mode="unknown" />
+
+// Headless API
+/* eslint-disable import/first */
+import {
+  DropdownTreeSelectClassNames,
+  DropdownTreeSelectHandle,
+  DropdownTreeSelectNode,
+  DropdownTreeSelectTag,
+  DropdownTreeSelectUnstyled,
+  useDropdownTreeSelect,
+  UseDropdownTreeSelectResult,
+} from 'react-dropdown-tree-select/headless'
+import {
+  DropdownTreeSelectUnstyled as MainDropdownTreeSelectUnstyled,
+  useDropdownTreeSelect as mainUseDropdownTreeSelect,
+} from 'react-dropdown-tree-select'
+/* eslint-enable import/first */
+export const HeadlessCustomUI = () => {
+  const ds: UseDropdownTreeSelectResult = useDropdownTreeSelect({ data, mode: 'multiSelect' })
+  const node: DropdownTreeSelectNode | undefined = ds.tree[0]
+  const tag: DropdownTreeSelectTag | undefined = ds.tags[0]
+  const isOpen: boolean = ds.isOpen
+  const searchTerm: string = ds.searchTerm
+  ds.checkNode('id', true)
+  ds.toggleNode('id')
+  ds.removeTag('id')
+  ds.setSearch('term')
+  return (
+    <div {...ds.getRootProps({ className: 'x' })}>
+      <button {...ds.getTriggerProps()}>{isOpen ? searchTerm : ''}</button>
+      <input {...ds.getInputProps({ onKeyDown: e => e.key })} />
+      {tag && <span {...ds.getTagProps(tag)} />}
+      {tag && <button {...ds.getTagRemoveProps(tag)} />}
+      <ul {...ds.getListProps()}>{node && <li {...ds.getNodeProps(node)} />}</ul>
+      {node && <input {...ds.getCheckboxProps(node)} />}
+      {node && <i {...ds.getToggleProps(node)} />}
+    </div>
+  )
+}
+
+const classNames: DropdownTreeSelectClassNames = { root: 'a', checkbox: 'b' }
+const unstyledRef = React.createRef<DropdownTreeSelectHandle>()
+export const unstyled = <DropdownTreeSelectUnstyled ref={unstyledRef} data={data} classNames={classNames} />
+export const MainEntryHeadless = () => {
+  const ds = mainUseDropdownTreeSelect({ data })
+  return <MainDropdownTreeSelectUnstyled data={data} classNames={{ node: String(ds.tree.length) }} />
+}
+
+// @ts-expect-error unknown classNames key
+export const invalidClassNames = <DropdownTreeSelectUnstyled data={data} classNames={{ unknown: 'x' }} />

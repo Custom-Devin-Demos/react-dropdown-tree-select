@@ -1,7 +1,8 @@
 import PropTypes from 'prop-types'
-import React, { memo } from 'react'
+import React, { memo, useContext } from 'react'
 import Checkbox from '../checkbox'
 import RadioButton from '../radio'
+import ClassNamesContext from '../headless/ClassNamesContext'
 
 import { Mode, NodeAction, NodeDataSet } from '../types'
 
@@ -36,6 +37,8 @@ const NodeLabel = ({
   clientId,
   onCheckboxChange,
 }: NodeLabelProps) => {
+  const { checkbox: checkboxClassName, label: labelClassName } = useContext(ClassNamesContext)
+
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement> | React.MouseEvent<HTMLSpanElement>) => {
     if (mode === 'simpleSelect' || mode === 'radioSelect') {
       onCheckboxChange(id, true)
@@ -60,14 +63,16 @@ const NodeLabel = ({
   }
 
   const sharedProps = { id, value, checked, disabled, readOnly, tabIndex: -1 }
-  const className = ['checkbox-item', mode === 'simpleSelect' && 'simple-select'].filter(Boolean).join(' ')
+  const className = ['checkbox-item', mode === 'simpleSelect' && 'simple-select', checkboxClassName]
+    .filter(Boolean)
+    .join(' ')
 
   return (
-    <label title={title || label} htmlFor={id}>
+    <label title={title || label} htmlFor={id} className={labelClassName}>
       {mode === 'radioSelect' ? (
         <RadioButton
           name={clientId as string}
-          className="radio-item"
+          className={['radio-item', checkboxClassName].filter(Boolean).join(' ')}
           onChange={handleCheckboxChange}
           {...sharedProps}
         />

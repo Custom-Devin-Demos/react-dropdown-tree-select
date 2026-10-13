@@ -20,12 +20,34 @@
   ],
   "main": "dist/react-dropdown-tree-select.js",
   "types": "dist/react-dropdown-tree-select.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/react-dropdown-tree-select.d.ts",
+      "default": "./dist/react-dropdown-tree-select.js"
+    },
+    "./headless": {
+      "types": "./dist/headless.d.ts",
+      "default": "./dist/headless.js"
+    },
+    "./styles.css": "./dist/styles.css",
+    "./dist/styles.css": "./dist/styles.css",
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json"
+  },
+  "typesVersions": {
+    "*": {
+      "headless": [
+        "dist/headless.d.ts"
+      ]
+    }
+  },
   "repository": "https://github.com/dowjones/react-dropdown-tree-select.git",
   "author": "Hrusikesh Panda <hrusikesh.panda@dowjones.com>",
   "license": "MIT",
   "scripts": {
     "build": "rimraf dist/**/* && cross-env NODE_ENV=production webpack --config webpack.config.js --bail --mode=production && yarn build:types",
     "build:types": "tsc -p tsconfig.build.json && node scripts/write-types-entry.js",
+    "check-exports": "node scripts/check-exports.js",
     "build:docs": "yarn build && storybook build --quiet -o docs-dist",
     "commit": "git-cz",
     "coveralls": "yarn test && c8 report --reporter=text-lcov | coveralls",
@@ -45,8 +67,10 @@
   },
   "files": [
     "dist/react-dropdown-tree-select.*",
+    "dist/headless.*",
     "dist/styles.*",
-    "dist/types"
+    "dist/types",
+    "headless"
   ],
   "dependencies": {
     "array.partial": "^1.0.5",

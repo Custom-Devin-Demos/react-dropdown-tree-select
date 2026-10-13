@@ -5,7 +5,14 @@ const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
 
 module.exports = {
   devtool: 'source-map',
-  entry: { 'react-dropdown-tree-select': './src/index.tsx' },
+  entry: {
+    'react-dropdown-tree-select': './src/index.tsx',
+    // CSS free entry: `react-dropdown-tree-select/headless`
+    headless: {
+      import: './src/headless/index.ts',
+      library: { name: 'ReactDropdownTreeSelectHeadless', type: 'umd', umdNamedDefine: true },
+    },
+  },
   output: {
     path: path.join(__dirname, 'dist'),
     filename: '[name].js',

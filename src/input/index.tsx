@@ -1,7 +1,8 @@
-import React, { memo, useMemo, useRef } from 'react'
+import React, { memo, useContext, useMemo, useRef } from 'react'
 import PropTypes from 'prop-types'
 import { debounce, useIsomorphicLayoutEffect } from '../utils'
-import { getAriaLabel } from '../a11y'
+import ClassNamesContext from '../headless/ClassNamesContext'
+import { buildInputProps } from '../headless/prop-getters'
 import { InternalTreeNode, Mode, TextProps } from '../types'
 
 export interface InputProps {
@@ -33,6 +34,7 @@ const Input = ({
   activeDescendant,
   inlineSearchInput,
 }: InputProps) => {
+  const { input: className } = useContext(ClassNamesContext)
   const onInputChangeRef = useRef(onInputChange)
   useIsomorphicLayoutEffect(() => {
     onInputChangeRef.current = onInputChange
@@ -46,19 +48,19 @@ const Input = ({
 
   return (
     <input
-      type="text"
-      disabled={disabled}
-      ref={inputRef}
-      className="search"
-      placeholder={inlineSearchInput ? texts.inlineSearchPlaceholder || 'Search...' : texts.placeholder || 'Choose...'}
-      onKeyDown={onKeyDown}
-      onChange={handleInputChange}
-      onFocus={onFocus}
-      onBlur={onBlur}
-      readOnly={readOnly}
-      aria-activedescendant={activeDescendant}
-      aria-autocomplete={onKeyDown ? 'list' : undefined}
-      {...getAriaLabel(texts.label)}
+      {...buildInputProps({
+        inputRef,
+        texts,
+        onChange: handleInputChange,
+        onFocus,
+        onBlur,
+        onKeyDown,
+        disabled,
+        readOnly,
+        activeDescendant,
+        inlineSearchInput,
+        className,
+      })}
     />
   )
 }

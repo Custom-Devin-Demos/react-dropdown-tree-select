@@ -101,6 +101,10 @@ export interface DropdownTreeSelectProps {
    * search bar, the tree will not deselect nodes.
    */
   disablePoppingOnBackspace?: boolean
+  /** Extra class names added (next to the default ones) to the rendered elements, e.g. `{ trigger: 'btn', node: 'my-node' }`.
+   * Mostly useful with the unstyled component (`DropdownTreeSelectUnstyled`) to style it with utility classes.
+   */
+  classNames?: DropdownTreeSelectClassNames
 }
 
 export interface DropdownTreeSelectState {
@@ -197,3 +201,20 @@ export interface InternalTreeNode extends TreeNode {
 }
 
 export type TreeNodeMap = Map<string, InternalTreeNode>
+
+/** Elements that accept extra class names through the `classNames` prop */
+export type DropdownTreeSelectClassNameKey =
+  | 'root'
+  | 'dropdown'
+  | 'trigger'
+  | 'tags'
+  | 'tag'
+  | 'input'
+  | 'content'
+  | 'tree'
+  | 'node'
+  | 'toggle'
+  | 'checkbox'
+  | 'label'
+
+export type DropdownTreeSelectClassNames = Partial<Record<DropdownTreeSelectClassNameKey, string>>

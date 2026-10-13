@@ -1,5 +1,7 @@
 import PropTypes from 'prop-types'
-import React, { memo } from 'react'
+import React, { memo, useContext } from 'react'
+
+import ClassNamesContext from '../headless/ClassNamesContext'
 
 export interface ToggleProps {
   expanded?: boolean
@@ -9,7 +11,10 @@ export interface ToggleProps {
 }
 
 const Toggle = ({ expanded, isLeaf, onNodeToggle, id }: ToggleProps) => {
-  const toggleCx = ['toggle', expanded && 'expanded', !expanded && 'collapsed'].filter(Boolean).join(' ')
+  const { toggle: toggleClassName } = useContext(ClassNamesContext)
+  const toggleCx = ['toggle', expanded && 'expanded', !expanded && 'collapsed', toggleClassName]
+    .filter(Boolean)
+    .join(' ')
 
   if (isLeaf) {
     return <i role="button" tabIndex={-1} className={toggleCx} style={{ visibility: 'hidden' }} aria-hidden />

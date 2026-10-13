@@ -1,8 +1,9 @@
 import InfiniteScroll from 'react-infinite-scroll-component'
 import PropTypes from 'prop-types'
-import React, { useCallback, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useContext, useMemo, useRef, useState } from 'react'
 
 import TreeNode from '../tree-node'
+import ClassNamesContext from '../headless/ClassNamesContext'
 import { findIndex, useIsomorphicLayoutEffect } from '../utils'
 import { InternalTreeNode, Mode, NodeAction, TreeNodeMap } from '../types'
 
@@ -61,6 +62,7 @@ const Tree = ({
   pageSize = 100,
 }: TreeProps) => {
   const node = useRef<HTMLUListElement | null>(null)
+  const { tree: treeClassName } = useContext(ClassNamesContext)
   const [scrollableTarget, setScrollableTarget] = useState<HTMLElement | null>(null)
 
   useIsomorphicLayoutEffect(() => {
@@ -138,7 +140,11 @@ const Tree = ({
   }
 
   return (
-    <ul className={`root ${searchModeOn ? 'searchModeOn' : ''}`} ref={node} {...ariaAttributes}>
+    <ul
+      className={`root ${searchModeOn ? 'searchModeOn' : ''}${treeClassName ? ` ${treeClassName}` : ''}`}
+      ref={node}
+      {...ariaAttributes}
+    >
       {scrollableTarget && (
         <InfiniteScroll
           dataLength={items.length}
