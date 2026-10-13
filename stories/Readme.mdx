@@ -1,0 +1,24 @@
+import { Markdown, Meta } from '@storybook/blocks'
+
+import Readme from '../README.md?raw'
+import { prepareMarkdown, toStorybookPath } from './utils/markdown'
+
+<Meta title="Guides/README" />
+
+export const DocsLink = ({ href, children, ...props }) => {
+  const local = toStorybookPath(href)
+  if (local) {
+    return (
+      <a href={local} target="_top" {...props}>
+        {children}
+      </a>
+    )
+  }
+  return (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  )
+}
+
+<Markdown options={{ overrides: { a: DocsLink } }}>{prepareMarkdown(Readme)}</Markdown>

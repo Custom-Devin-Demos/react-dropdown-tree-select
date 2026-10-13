@@ -1,0 +1,164 @@
+/* Styles for the Headless stories (the headless components don't ship any CSS) */
+.hl-root {
+  font-family: system-ui, sans-serif;
+  max-width: 420px;
+}
+
+.hl-trigger {
+  display: block;
+  border: 1px solid #94a3b8;
+  border-radius: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+  background: #fff;
+}
+
+.hl-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hl-tag {
+  display: inline-flex;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.hl-tag button {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.hl-root .search {
+  border: 0;
+  outline: none;
+}
+
+.hl-content {
+  margin-top: 4px;
+  border: 1px solid #94a3b8;
+  border-radius: 8px;
+  padding: 4px;
+  max-height: 300px;
+  overflow: auto;
+}
+
+.hl-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hl-node {
+  list-style: none;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.hl-node.focused {
+  background: #f1f5f9;
+}
+
+.hl-node.hide:not(.match-in-children) {
+  display: none;
+}
+
+.hl-node.match-in-children.hide .hl-label {
+  color: #94a3b8;
+}
+
+.hl-toggle {
+  display: inline-block;
+  width: 1rem;
+  cursor: pointer;
+  font-style: normal;
+}
+
+.hl-toggle.collapsed::after {
+  content: '▸';
+}
+
+.hl-toggle.expanded::after {
+  content: '▾';
+}
+
+.chips {
+  font-family: system-ui, sans-serif;
+  max-width: 420px;
+}
+
+.chips-trigger {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  border: 2px solid #0f766e;
+  border-radius: 12px;
+  padding: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 2px 4px 2px 10px;
+  background: #0f766e;
+  color: #fff;
+}
+
+.chip-remove {
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  cursor: pointer;
+}
+
+.chips-input {
+  flex: 1;
+  min-width: 80px;
+  border: 0;
+  outline: none;
+}
+
+.chips-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 4px;
+  border: 1px solid #ccfbf1;
+  border-radius: 12px;
+  max-height: 300px;
+  overflow: auto;
+}
+
+.chips-node {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 8px;
+}
+
+.chips-node.focused {
+  background: #ccfbf1;
+}
+
+.chips-toggle {
+  width: 1.25rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.chips-empty {
+  padding: 4px 8px;
+  color: #64748b;
+}

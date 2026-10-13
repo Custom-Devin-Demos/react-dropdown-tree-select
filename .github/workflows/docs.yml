@@ -5,32 +5,37 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
+      - 'src/**'
+      - 'stories/**'
+      - '.storybook/**'
       - package.json
+      - yarn.lock
       - README.md
+      - MIGRATION.md
+  workflow_dispatch:
 
 jobs:
   build-docs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           persist-credentials: false
       - name: Setup Node JS
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: 18.x
           cache: yarn
 
       - name: Build Docs 📚
         run: |
-          # un-ignore bundle.js
-          mv docs/.gitignore .gitignore
-          yarn install --ignore-engines
+          yarn install --ignore-engines --frozen-lockfile
           yarn build:docs
+          touch docs-dist/.nojekyll
       - name: Deploy Pages 🚀
         uses: JamesIves/github-pages-deploy-action@releases/v3
         with:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
           BRANCH: gh-pages
-          FOLDER: docs
+          FOLDER: docs-dist

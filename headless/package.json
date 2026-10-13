@@ -1,0 +1,6 @@
+{
+  "name": "react-dropdown-tree-select/headless",
+  "private": true,
+  "main": "../dist/headless.js",
+  "types": "../dist/headless.d.ts"
+}
