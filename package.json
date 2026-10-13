@@ -60,6 +60,7 @@
     "test": "cross-env NODE_ENV=test c8 ava",
     "test:cov": "yarn test && c8 --reporter=lcov report",
     "test:watch": "cross-env NODE_ENV=test ava --watch",
+    "bench": "cross-env NODE_ENV=test node -r ./setupBabel scripts/bench-100k.ts",
     "semantic-release": "semantic-release",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
@@ -73,6 +74,7 @@
     "headless"
   ],
   "dependencies": {
+    "@tanstack/react-virtual": "^3.13.12",
     "array.partial": "^1.0.5",
     "react-infinite-scroll-component": "^6.1.0"
   },

@@ -445,6 +445,25 @@ Extra class names added next to the default ones, keyed by element: `root`, `dro
 />
 ```
 
+### virtualized
+
+Type: `bool | { itemHeight?: number, overscan?: number, height?: number }` (default: `false`)
+
+Renders the dropdown list with windowing ([@tanstack/react-virtual](https://tanstack.com/virtual)): only the rows in view (plus `overscan` rows around them) are in the DOM, so trees with 100k+ nodes open, scroll and search smoothly. `true` uses the defaults:
+
+| Option       | Default | Description                                                                                          |
+| ------------ | ------- | ---------------------------------------------------------------------------------------------------- |
+| `itemHeight` | `32`    | Estimated row height in px. Rows are measured after rendering, so custom CSS row heights still work. |
+| `overscan`   | `10`    | Number of extra rows rendered above and below the visible ones.                                      |
+| `height`     | `300`   | Max height of the scrollable list (`ul.root`) in px.                                                 |
+
+```jsx
+<DropdownTreeSelect data={hugeTree} virtualized />
+<DropdownTreeSelect data={hugeTree} virtualized={{ itemHeight: 28, height: 400 }} />
+```
+
+When enabled, `ul.root` gets the additional `virtualized` class and is wrapped in a scroll container `div.virtualized-viewport` (instead of the infinite scroll wrapper inside it), every rendered `li` gets `aria-setsize`, `aria-posinset` (position among its visible siblings) and `aria-level`, and keyboard navigation scrolls the focused node into view. When `false` (default) the list renders exactly as before, using infinite scroll.
+
 ## Styling and Customization
 
 ### Default styles
@@ -612,7 +631,9 @@ The tree debounces key presses to avoid costly search calculations. The default 
 
 The dropdown renders only visible content and skips any nodes that are going to hidden from the user. E.g., if a parent node is not expanded, there is no point in rendering children since they will not be visible anyway.
 
-~~Planned feature: Use [react-virtualized](https://github.com/bvaughn/react-virtualized) to take this to the next level.~~ The search tree now uses infinite scroll, limiting search results to 100 items initially (more load seamlessly as you scroll) - this results in super fast rendering even with large number of nodes (see [#80](https://github.com/dowjones/react-dropdown-tree-select/issues/80)).
+By default the tree uses infinite scroll, rendering the first 100 visible nodes initially (more load seamlessly as you scroll) - this results in fast rendering even with large number of nodes. However, every scrolled-in page stays in the DOM, so scrolling through tens of thousands of expanded nodes or search results gets progressively slower.
+
+For very large trees set the [`virtualized`](#virtualized) prop: the list is windowed so only the rows in view (plus a small overscan) are ever in the DOM, regardless of how many nodes are expanded or matched. On a generated 100k-node tree (100 roots × 10 × 100) the tree builds in ~45ms, searches in < 30ms and opens fully expanded with ~20 `li` elements in the DOM (run `yarn bench` to reproduce). See the `Performance` stories in Storybook.
 
 ### Avoiding re-initialization on parent re-renders
 

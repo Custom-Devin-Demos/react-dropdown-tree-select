@@ -83,6 +83,7 @@ const useDropdownTreeSelect = (options: UseDropdownTreeSelectOptions) => {
     clearSearchOnChange,
     readOnly,
     disablePoppingOnBackspace = false,
+    virtualized,
   } = options
 
   const generatedId = useClientId()
@@ -143,6 +144,7 @@ const useDropdownTreeSelect = (options: UseDropdownTreeSelectOptions) => {
     mode,
     readOnly,
     disablePoppingOnBackspace,
+    virtualized,
   })
 
   useIsomorphicLayoutEffect(() => {
@@ -162,6 +164,7 @@ const useDropdownTreeSelect = (options: UseDropdownTreeSelectOptions) => {
       mode,
       readOnly,
       disablePoppingOnBackspace,
+      virtualized,
     }
   })
 
@@ -327,6 +330,8 @@ const useDropdownTreeSelect = (options: UseDropdownTreeSelectOptions) => {
         )
         if (newFocus !== currentFocus) {
           update({ currentFocus: newFocus, treeVersion: stateRef.current.treeVersion + 1 }, () => {
+            // the virtualized tree scrolls to the focused row itself (it may not be rendered yet)
+            if (optionsRef.current.virtualized) return
             const ele = document && document.getElementById(`${newFocus}_li`)
             ele && ele.scrollIntoView()
           })

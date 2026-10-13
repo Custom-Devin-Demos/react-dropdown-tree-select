@@ -4,8 +4,9 @@ import React, { useCallback, useContext, useMemo, useRef, useState } from 'react
 
 import TreeNode from '../tree-node'
 import ClassNamesContext from '../headless/ClassNamesContext'
+import VirtualizedTree from './virtualized'
 import { findIndex, useIsomorphicLayoutEffect } from '../utils'
-import { InternalTreeNode, Mode, NodeAction, TreeNodeMap } from '../types'
+import { InternalTreeNode, Mode, NodeAction, TreeNodeMap, VirtualizationOptions } from '../types'
 
 export interface TreeProps {
   data: TreeNodeMap
@@ -26,6 +27,8 @@ export interface TreeProps {
   activeDescendant?: string
   /** Bumped by the owner whenever nodes inside `data` were mutated in place */
   treeVersion?: number
+  /** Renders only the rows in view (see `DropdownTreeSelectProps#virtualized`) instead of paginating */
+  virtualized?: boolean | VirtualizationOptions
 }
 
 const shouldRenderNode = (node: InternalTreeNode, data: TreeNodeMap, searchModeOn?: boolean) => {
@@ -44,7 +47,7 @@ const getPageOfActiveDescendant = (nodes: React.ReactElement[], activeDescendant
   return focusIndex > 0 ? Math.ceil(focusIndex / pageSize) : 1
 }
 
-const Tree = ({
+const PagedTree = ({
   data,
   treeVersion,
   keepTreeOnSearch,
@@ -160,6 +163,8 @@ const Tree = ({
   )
 }
 
+const Tree = (props: TreeProps) => (props.virtualized ? <VirtualizedTree {...props} /> : <PagedTree {...props} />)
+
 Tree.propTypes = {
   data: PropTypes.object,
   keepTreeOnSearch: PropTypes.bool,
@@ -176,6 +181,7 @@ Tree.propTypes = {
   clientId: PropTypes.string,
   activeDescendant: PropTypes.string,
   treeVersion: PropTypes.number,
+  virtualized: PropTypes.oneOfType([PropTypes.bool, PropTypes.object]),
 }
 
 export default Tree

@@ -37,6 +37,7 @@ const DropdownTreeSelectUnstyled = forwardRef<DropdownTreeSelectHandle, Dropdown
       keepTreeOnSearch,
       keepChildrenOnSearch,
       showPartiallySelected,
+      virtualized,
     } = props
 
     const { internal, classNames, applySearch } = useDropdownTreeSelectController(props, false)
@@ -122,6 +123,7 @@ const DropdownTreeSelectUnstyled = forwardRef<DropdownTreeSelectHandle, Dropdown
                     onCheckboxChange={onCheckboxChange}
                     onNodeToggle={onNodeToggle}
                     showPartiallySelected={showPartiallySelected}
+                    virtualized={virtualized}
                     {...commonProps}
                   />
                 )}

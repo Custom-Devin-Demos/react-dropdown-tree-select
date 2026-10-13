@@ -210,3 +210,13 @@ export const MainEntryHeadless = () => {
 
 // @ts-expect-error unknown classNames key
 export const invalidClassNames = <DropdownTreeSelectUnstyled data={data} classNames={{ unknown: 'x' }} />
+
+export const virtualizedTrue = <DropdownTreeSelect data={data} virtualized />
+export const virtualizedOptions = (
+  <DropdownTreeSelect data={data} virtualized={{ itemHeight: 28, overscan: 5, height: 400 }} />
+)
+const virtualizationOptions: DropdownTreeSelectProps['virtualized'] = { height: 250 }
+export const virtualizedTyped = <DropdownTreeSelect data={data} virtualized={virtualizationOptions} />
+
+// @ts-expect-error itemHeight must be a number
+export const invalidVirtualized = <DropdownTreeSelect data={data} virtualized={{ itemHeight: '32px' }} />

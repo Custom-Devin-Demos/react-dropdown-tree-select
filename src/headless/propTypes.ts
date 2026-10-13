@@ -30,6 +30,10 @@ const dropdownTreeSelectPropTypes = {
   tabIndex: PropTypes.number,
   disablePoppingOnBackspace: PropTypes.bool,
   classNames: PropTypes.objectOf(PropTypes.string),
+  virtualized: PropTypes.oneOfType([
+    PropTypes.bool,
+    PropTypes.shape({ itemHeight: PropTypes.number, overscan: PropTypes.number, height: PropTypes.number }),
+  ]),
 }
 
 export default dropdownTreeSelectPropTypes
