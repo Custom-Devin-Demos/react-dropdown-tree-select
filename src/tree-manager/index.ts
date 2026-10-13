@@ -4,7 +4,8 @@ import flattenTree from './flatten-tree'
 import cloneTree from './cloneTree'
 import nodeVisitor from './nodeVisitor'
 import keyboardNavigation, { FocusActionNames } from './keyboardNavigation'
-import { InternalTreeNode, Mode, TreeData, TreeNode, TreeNodeMap } from '../types'
+import addChildren from './addChildren'
+import { InternalTreeNode, Mode, TreeData, TreeNode, TreeNodeMap, TreeNodeProps } from '../types'
 
 export type SearchPredicate = (currentNode: TreeNode, searchTerm: string) => boolean
 
@@ -332,6 +333,11 @@ class TreeManager {
         matches.push(node._id)
       }
     }
+  }
+
+  /** Inserts lazily loaded children under `parentId` (see `./addChildren`) */
+  addChildren(parentId: string, children: TreeNodeProps[]): InternalTreeNode[] {
+    return addChildren(this, parentId, children)
   }
 }
 

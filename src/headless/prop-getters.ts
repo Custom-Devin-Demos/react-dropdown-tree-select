@@ -2,7 +2,7 @@ import React from 'react'
 
 import { getAriaLabel } from '../a11y'
 import { getDataset } from '../utils'
-import { getAriaAttributes as getNodeAriaAttributes, getNodeCx } from '../tree-node'
+import { getAriaAttributes as getNodeAriaAttributes, getNodeCx, isLeafNode } from '../tree-node'
 import { InternalTreeNode, Mode, TextProps } from '../types'
 
 /**
@@ -281,13 +281,14 @@ export const buildNodeProps = (node: InternalTreeNode, options: NodePropsOptions
 
 export interface ToggleOptions {
   onNodeToggle: (id: string) => void
+  mode?: Mode
   className?: string
 }
 
-export const buildToggleProps = (node: InternalTreeNode, { onNodeToggle, className }: ToggleOptions) => {
-  const { _id: id, _children, expanded } = node
+export const buildToggleProps = (node: InternalTreeNode, { onNodeToggle, mode, className }: ToggleOptions) => {
+  const { _id: id, expanded } = node
   const toggleCx = cx('toggle', expanded && 'expanded', !expanded && 'collapsed', className)
-  const isLeaf = !_children || _children.length === 0
+  const isLeaf = isLeafNode({ ...node, mode } as Parameters<typeof isLeafNode>[0])
 
   if (isLeaf) {
     return {

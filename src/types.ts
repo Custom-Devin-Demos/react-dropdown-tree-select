@@ -111,6 +111,16 @@ export interface DropdownTreeSelectProps {
    * Defaults to `false`
    */
   virtualized?: boolean | VirtualizationOptions
+  /** Loads the children of a node flagged with `hasChildren` the first time it is expanded.
+   * The resolved nodes are inserted under the expanded node and follow the selection rules of the current `mode`
+   * (e.g. in multiSelect, children of a checked parent are checked).
+   * While pending the node renders with the `loading` class and `aria-busy`; on rejection it collapses again,
+   * gets the `load-error` class, `onLoadChildrenError` is called and the next expand retries.
+   * Search only covers nodes that have been loaded.
+   */
+  loadChildren?: (node: TreeNode) => Promise<TreeNodeProps[]>
+  /** Fires when the promise returned by `loadChildren` rejects */
+  onLoadChildrenError?: (node: TreeNode, error: unknown) => void
 }
 
 export interface VirtualizationOptions {
@@ -156,6 +166,10 @@ export interface TreeNode {
    * Can be used on more than one node.
    */
   isDefaultValue?: boolean
+  /** If true, the node is expandable even though `children` is absent/empty: its children are fetched with
+   * `loadChildren` when the node is expanded for the first time.
+   */
+  hasChildren?: boolean
   /** Any extra properties that you'd like to receive during `onChange` event */
   [property: string]: any
 }
@@ -176,6 +190,8 @@ export interface TextProps {
   label?: string
   /** The text to display for `aria-label` on tag delete buttons which is combined with `aria-labelledby` pointing to the node label. Defaults to `Remove */
   labelRemove?: string
+  /** The text to display while the children of a node are being loaded with `loadChildren`. Defaults to `Loading...` */
+  loadingChildren?: string
 }
 
 export interface NodeAction {
@@ -213,6 +229,12 @@ export interface InternalTreeNode extends TreeNode {
   title?: string
   tagLabel?: string
   children?: TreeNodeProps[]
+  /** `loadChildren` is pending for this node */
+  _loading?: boolean
+  /** The last `loadChildren` call for this node rejected */
+  _loadError?: boolean
+  /** Children of a `hasChildren` node have been loaded */
+  _childrenLoaded?: boolean
 }
 
 export type TreeNodeMap = Map<string, InternalTreeNode>

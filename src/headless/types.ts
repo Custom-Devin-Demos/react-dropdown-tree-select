@@ -14,7 +14,7 @@ export interface DropdownTreeSelectNode {
   value: string
   /** 0 for root nodes */
   depth: number
-  /** `true` when the node has no children */
+  /** `true` when the node has no children (a `hasChildren` node is not a leaf until its children turn out empty) */
   isLeaf: boolean
   expanded: boolean
   checked: boolean
@@ -23,6 +23,10 @@ export interface DropdownTreeSelectNode {
   /** Has the keyboard focus (`aria-activedescendant`) */
   focused: boolean
   disabled: boolean
+  /** Children are being loaded with `loadChildren` */
+  loading: boolean
+  /** The last `loadChildren` call for this node rejected (the next expand retries) */
+  loadError: boolean
   /** The underlying node object (with any custom properties from `data`), as passed to `onChange` */
   node: TreeNode
 }

@@ -6,6 +6,8 @@ import Actions from './actions'
 import NodeLabel from './node-label'
 import Toggle from './toggle'
 import ClassNamesContext from '../headless/ClassNamesContext'
+import { DEFAULT_LOADING_TEXT, LoadingTextContext } from './loading-context'
+import { isLazyNode } from '../tree-manager/addChildren'
 
 import { InternalTreeNode, Mode, NodeAction } from '../types'
 
@@ -28,11 +30,15 @@ export interface TreeNodeComponentProps extends InternalTreeNode {
 
 const isLeaf = (children?: string[]) => isEmpty(children)
 
+// a `hasChildren` node stays expandable until its (lazily loaded) children turn out to be empty
+const isLazy = (props: TreeNodeComponentProps) => isLazyNode(props) && props.mode !== 'simpleSelect'
+
+export const isLeafNode = (props: TreeNodeComponentProps) => isLeaf(props._children) && !isLazy(props)
+
 export const getNodeCx = (props: TreeNodeComponentProps) => {
   const {
     keepTreeOnSearch,
     keepChildrenOnSearch,
-    _children,
     matchInChildren,
     matchInParent,
     disabled,
@@ -43,12 +49,15 @@ export const getNodeCx = (props: TreeNodeComponentProps) => {
     readOnly,
     checked,
     _focused: focused,
+    _loading: loading,
+    _loadError: loadError,
   } = props
+  const leaf = isLeafNode(props)
 
   return [
     'node',
-    isLeaf(_children) && 'leaf',
-    !isLeaf(_children) && 'tree',
+    leaf && 'leaf',
+    !leaf && 'tree',
     disabled && 'disabled',
     hide && 'hide',
     keepTreeOnSearch && matchInChildren && 'match-in-children',
@@ -57,22 +66,16 @@ export const getNodeCx = (props: TreeNodeComponentProps) => {
     readOnly && 'readOnly',
     checked && 'checked',
     focused && 'focused',
+    loading && 'loading',
+    loadError && 'load-error',
     className,
   ]
     .filter(Boolean)
     .join(' ')
 }
 
-export const getAriaAttributes = ({
-  _children,
-  _depth,
-  checked,
-  disabled,
-  expanded,
-  readOnly,
-  mode,
-  partial,
-}: TreeNodeComponentProps) => {
+export const getAriaAttributes = (props: TreeNodeComponentProps) => {
+  const { _children, _depth, checked, disabled, expanded, readOnly, mode, partial, _loading } = props
   const attributes: Record<string, any> = {}
 
   attributes.role = mode === 'simpleSelect' ? 'option' : 'treeitem'
@@ -81,8 +84,9 @@ export const getAriaAttributes = ({
   if (mode !== 'simpleSelect') {
     attributes['aria-checked'] = partial ? 'mixed' : checked
     attributes['aria-level'] = (_depth || 0) + 1
-    attributes['aria-expanded'] = _children && (expanded ? 'true' : 'false')
+    attributes['aria-expanded'] = (isLazy(props) || _children) && (expanded ? 'true' : 'false')
   }
+  if (_loading) attributes['aria-busy'] = true
   return attributes
 }
 
@@ -91,7 +95,6 @@ const TreeNode = (props: TreeNodeComponentProps) => {
     mode,
     keepTreeOnSearch,
     _id,
-    _children,
     dataset,
     _depth,
     expanded,
@@ -110,7 +113,9 @@ const TreeNode = (props: TreeNodeComponentProps) => {
     readOnly,
     clientId,
     liProps,
+    _loading: loading,
   } = props
+  const loadingText = useContext(LoadingTextContext) || DEFAULT_LOADING_TEXT
   const { node: nodeClassName } = useContext(ClassNamesContext)
   const liCx = [getNodeCx(props), nodeClassName].filter(Boolean).join(' ')
   const style = keepTreeOnSearch || !searchModeOn ? { paddingLeft: `${(_depth || 0) * 20}px` } : {}
@@ -127,7 +132,7 @@ const TreeNode = (props: TreeNodeComponentProps) => {
       {...getAriaAttributes(props)}
       {...extraLiProps}
     >
-      <Toggle isLeaf={isLeaf(_children)} expanded={expanded} id={_id} onNodeToggle={onNodeToggle} />
+      <Toggle isLeaf={isLeafNode(props)} expanded={expanded} id={_id} onNodeToggle={onNodeToggle} />
       <NodeLabel
         title={title}
         label={label}
@@ -143,6 +148,11 @@ const TreeNode = (props: TreeNodeComponentProps) => {
         clientId={clientId}
       />
       <Actions actions={actions} onAction={onAction} id={_id} readOnly={readOnly} />
+      {loading && (
+        <span className="node-loading" role="status">
+          {loadingText}
+        </span>
+      )}
     </li>
   )
 }
@@ -171,6 +181,7 @@ TreeNode.propTypes = {
   showPartiallySelected: PropTypes.bool,
   readOnly: PropTypes.bool,
   clientId: PropTypes.string,
+  hasChildren: PropTypes.bool,
   liProps: PropTypes.object,
 }
 

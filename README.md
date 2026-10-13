@@ -68,6 +68,8 @@ A lightweight and fast control to render a select component that can display hie
   - [tabIndex](#tabIndex)
   - [disablePoppingOnBackspace](#disablePoppingOnBackspace)
   - [classNames](#classnames)
+  - [loadChildren](#loadchildren)
+  - [onLoadChildrenError](#onloadchildrenerror)
 - [Styling and Customization](#styling-and-customization)
   - [Using default styles](#default-styles)
   - [Customizing with Bootstrap, Material Design styles](#customizing-styles)
@@ -280,6 +282,7 @@ Data for rendering the tree select items. The object requires the following stru
   dataset,        // optional: Allows data-* attributes to be set on the node and tag elements
   isDefaultValue, // optional: Indicate if a node is a default value. When true, the dropdown will automatically select the node(s) when there is no other selected node. Can be used on more than one node.
   tagLabel,       // optional: tag label in case you need it to differ from the checkbox label
+  hasChildren,    // optional: If true, the node is expandable even without `children`; they are fetched with `loadChildren` on first expand
   ...             // optional: Any extra properties that you'd like to receive during `onChange` event
 }
 ```
@@ -310,6 +313,7 @@ The `texts` object requires the following structure:
   noMatches,                // optional: The text to display when the search does not find results in the content list. Defaults to `No matches found`
   label,                    // optional: Adds `aria-labelledby` to search input when input starts with `#`, adds `aria-label` to search input when label has value (not containing '#')
   labelRemove,              // optional: The text to display for `aria-label` on tag delete buttons which is combined with `aria-labelledby` pointing to the node label. Defaults to `Remove`
+  loadingChildren,          // optional: The text to display while the children of a node are being loaded with `loadChildren`. Defaults to `Loading...`
 }
 ```
 
@@ -463,6 +467,45 @@ Renders the dropdown list with windowing ([@tanstack/react-virtual](https://tans
 ```
 
 When enabled, `ul.root` gets the additional `virtualized` class and is wrapped in a scroll container `div.virtualized-viewport` (instead of the infinite scroll wrapper inside it), every rendered `li` gets `aria-setsize`, `aria-posinset` (position among its visible siblings) and `aria-level`, and keyboard navigation scrolls the focused node into view. When `false` (default) the list renders exactly as before, using infinite scroll.
+
+### loadChildren
+
+Type: `(node: TreeNode) => Promise<TreeNodeProps[]>`
+
+Loads the children of nodes flagged with `hasChildren: true` the first time they are expanded (by clicking the toggle, `ArrowRight`, or because the node starts with `expanded: true`). Use it for trees that are too large or too expensive to fetch up front.
+
+```jsx
+const data = [
+  { label: 'Europe', value: 'europe', hasChildren: true },
+  { label: 'Asia', value: 'asia', hasChildren: true },
+]
+
+const loadChildren = node => fetch(`/api/regions/${node.value}/children`).then(res => res.json())
+
+<DropdownTreeSelect
+  data={data}
+  loadChildren={loadChildren}
+  onLoadChildrenError={(node, error) => console.error(`Could not load ${node.label}`, error)}
+  texts={{ loadingChildren: 'Fetching...' }}
+/>
+```
+
+- `loadChildren` is called at most once per node at a time; once it resolves the node is not loaded again (unless `data` is replaced).
+- While pending, the node is shown expanded with the `loading` class, `aria-busy="true"` and the `texts.loadingChildren` text (default `Loading...`).
+- The resolved nodes are inserted under the expanded node with the same id scheme as `data` (`<parentId>-<index>` unless the node has an `id`) and may themselves have `children` or `hasChildren`.
+- Selection follows the current `mode`: in `multiSelect`, children of a checked parent are checked (explicit `checked`/`isDefaultValue` values on the loaded nodes are honoured and the ancestors are re-evaluated, including the partial state with `showPartiallySelected`); `hierarchical` does not inherit anything; in `radioSelect` a loaded `checked`/`isDefaultValue` node is only selected when nothing else is selected yet. `onChange` is not fired for these changes. `hasChildren` has no effect in `simpleSelect`.
+- If the promise rejects (or `loadChildren` throws), the node collapses again, gets the `load-error` class and `onLoadChildrenError(node, error)` is called. Expanding it again retries the load.
+- Results are ignored when the component unmounted or `data` was replaced in the meantime.
+- `onNodeToggle` keeps firing on every expand/collapse.
+- Search only covers nodes that have been loaded.
+
+Without `loadChildren`, `hasChildren` nodes simply toggle their expanded state.
+
+### onLoadChildrenError
+
+Type: `(node: TreeNode, error: unknown) => void`
+
+Fires when the promise returned by [`loadChildren`](#loadchildren) rejects.
 
 ## Styling and Customization
 

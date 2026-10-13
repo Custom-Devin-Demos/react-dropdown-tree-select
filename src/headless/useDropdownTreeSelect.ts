@@ -3,7 +3,8 @@ import React, { useCallback, useMemo, useRef, useState } from 'react'
 import useDropdownTreeSelectState from '../hooks/useDropdownTreeSelect'
 import { debounce } from '../utils'
 import useIsomorphicLayoutEffect from '../utils/useIsomorphicLayoutEffect'
-import { DropdownTreeSelectClassNames, InternalTreeNode, TextProps, TreeNodeMap } from '../types'
+import { isLeafNode } from '../tree-node'
+import { DropdownTreeSelectClassNames, InternalTreeNode, Mode, TextProps, TreeNodeMap } from '../types'
 import { EMPTY_CLASS_NAMES } from './ClassNamesContext'
 import {
   buildCheckboxProps,
@@ -69,18 +70,20 @@ const shouldRenderNode = (node: InternalTreeNode, tree: TreeNodeMap, searchModeO
   return !parent || !!parent.expanded
 }
 
-const toNode = (node: InternalTreeNode, showPartiallySelected?: boolean): DropdownTreeSelectNode => ({
+const toNode = (node: InternalTreeNode, mode?: Mode, showPartiallySelected?: boolean): DropdownTreeSelectNode => ({
   id: node._id,
   parentId: node._parent,
   label: node.label,
   value: node.value,
   depth: node._depth || 0,
-  isLeaf: !node._children || node._children.length === 0,
+  isLeaf: isLeafNode({ ...node, mode } as Parameters<typeof isLeafNode>[0]),
   expanded: !!node.expanded,
   checked: !!node.checked,
   partial: !!(showPartiallySelected && node.partial),
   focused: !!node._focused,
   disabled: !!node.disabled,
+  loading: !!node._loading,
+  loadError: !!node._loadError,
   node,
 })
 
@@ -203,13 +206,13 @@ export const useDropdownTreeSelectController = (options: UseDropdownTreeSelectOp
       // mirrors the `.hide:not(.match-in-children)` rule of the default styles
       const hidden = node.hide && !(keepTreeOnSearch && node.matchInChildren)
       if (!hidden && shouldRenderNode(node, treeMap, searchModeOn)) {
-        nodes.push(toNode(node, showPartiallySelected))
+        nodes.push(toNode(node, mode, showPartiallySelected))
       }
     })
     return nodes
     // treeVersion signals in-place mutations of the nodes in `treeMap`
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [withVisibleNodes, treeMap, treeVersion, searchModeOn, keepTreeOnSearch, showPartiallySelected])
+  }, [withVisibleNodes, treeMap, treeVersion, searchModeOn, keepTreeOnSearch, showPartiallySelected, mode])
 
   const nodeOptions = {
     mode,
@@ -278,7 +281,7 @@ export const useDropdownTreeSelectController = (options: UseDropdownTreeSelectOp
       ),
     getToggleProps: (node: DropdownTreeSelectNode, userProps?: UserProps<HTMLElement>) =>
       mergeProps(
-        buildToggleProps(node.node as InternalTreeNode, { onNodeToggle, className: classNames.toggle }),
+        buildToggleProps(node.node as InternalTreeNode, { onNodeToggle, mode, className: classNames.toggle }),
         userProps
       ),
     getTagProps: (tag: DropdownTreeSelectTag, userProps?: UserProps<HTMLElement>) =>

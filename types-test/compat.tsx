@@ -220,3 +220,18 @@ export const virtualizedTyped = <DropdownTreeSelect data={data} virtualized={vir
 
 // @ts-expect-error itemHeight must be a number
 export const invalidVirtualized = <DropdownTreeSelect data={data} virtualized={{ itemHeight: '32px' }} />
+
+const lazyData: TreeNodeProps[] = [{ label: 'Lazy', value: 'lazy', hasChildren: true }]
+const loadChildren = (node: TreeNode): Promise<TreeNodeProps[]> =>
+  Promise.resolve([{ label: `${node.label} child`, value: `${node.value}-child`, hasChildren: false }])
+const lazyTexts: TextProps = { loadingChildren: 'Fetching...' }
+const lazyProps: DropdownTreeSelectProps = {
+  data: lazyData,
+  loadChildren,
+  onLoadChildrenError: (node: TreeNode, error: unknown) => void [node, error],
+  texts: lazyTexts,
+}
+export const lazyLoading = <DropdownTreeSelect {...lazyProps} />
+
+// @ts-expect-error loadChildren must return a promise
+export const syncLoadChildren = <DropdownTreeSelect data={lazyData} loadChildren={() => []} />

@@ -12,6 +12,7 @@ const dropdownTreeSelectPropTypes = {
     noMatches: PropTypes.string,
     label: PropTypes.string,
     labelRemove: PropTypes.string,
+    loadingChildren: PropTypes.string,
   }),
   showDropdown: PropTypes.oneOf(['default', 'initial', 'always']),
   className: PropTypes.string,
@@ -30,6 +31,8 @@ const dropdownTreeSelectPropTypes = {
   tabIndex: PropTypes.number,
   disablePoppingOnBackspace: PropTypes.bool,
   classNames: PropTypes.objectOf(PropTypes.string),
+  loadChildren: PropTypes.func,
+  onLoadChildrenError: PropTypes.func,
   virtualized: PropTypes.oneOfType([
     PropTypes.bool,
     PropTypes.shape({ itemHeight: PropTypes.number, overscan: PropTypes.number, height: PropTypes.number }),

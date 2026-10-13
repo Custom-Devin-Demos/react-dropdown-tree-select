@@ -5,6 +5,7 @@ import Tags from '../tags'
 import Trigger from '../trigger'
 import Tree from '../tree'
 import { DropdownTreeSelectProps, TextProps } from '../types'
+import { LoadingTextContext } from '../tree-node/loading-context'
 import ClassNamesContext from './ClassNamesContext'
 import dropdownTreeSelectPropTypes from './propTypes'
 import { buildContentProps, buildDropdownProps, buildRootProps } from './prop-getters'
@@ -113,19 +114,21 @@ const DropdownTreeSelectUnstyled = forwardRef<DropdownTreeSelectHandle, Dropdown
                 {allNodesHidden ? (
                   <span className="no-matches">{texts.noMatches || 'No matches found'}</span>
                 ) : (
-                  <Tree
-                    data={tree}
-                    treeVersion={treeVersion}
-                    keepTreeOnSearch={keepTreeOnSearch}
-                    keepChildrenOnSearch={keepChildrenOnSearch}
-                    searchModeOn={searchModeOn}
-                    onAction={onAction}
-                    onCheckboxChange={onCheckboxChange}
-                    onNodeToggle={onNodeToggle}
-                    showPartiallySelected={showPartiallySelected}
-                    virtualized={virtualized}
-                    {...commonProps}
-                  />
+                  <LoadingTextContext.Provider value={texts.loadingChildren}>
+                    <Tree
+                      data={tree}
+                      treeVersion={treeVersion}
+                      keepTreeOnSearch={keepTreeOnSearch}
+                      keepChildrenOnSearch={keepChildrenOnSearch}
+                      searchModeOn={searchModeOn}
+                      onAction={onAction}
+                      onCheckboxChange={onCheckboxChange}
+                      onNodeToggle={onNodeToggle}
+                      showPartiallySelected={showPartiallySelected}
+                      virtualized={virtualized}
+                      {...commonProps}
+                    />
+                  </LoadingTextContext.Provider>
                 )}
               </div>
             )}
