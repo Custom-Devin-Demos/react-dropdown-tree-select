@@ -67,9 +67,13 @@ A lightweight and fast control to render a select component that can display hie
   - [inlineSearchInput](#inlinesearchinput)
   - [tabIndex](#tabIndex)
   - [disablePoppingOnBackspace](#disablePoppingOnBackspace)
+  - [classNames](#classnames)
 - [Styling and Customization](#styling-and-customization)
   - [Using default styles](#default-styles)
   - [Customizing with Bootstrap, Material Design styles](#customizing-styles)
+- [Headless usage](#headless-usage)
+  - [Unstyled component](#unstyled-component)
+  - [useDropdownTreeSelect](#usedropdowntreeselect)
 - [Keyboard navigation](#keyboard-navigation)
 - [Performance](#performance)
   - [Search optimizations](#search-optimizations)
@@ -129,7 +133,7 @@ Visit [unpkg.com](https://unpkg.com/#/) to see other options.
 
 ### Peer Dependencies
 
-In order to avoid version conflicts in your project, you must specify and install [react](https://www.npmjs.com/package/react), [react-dom](https://www.npmjs.com/package/react-dom) as [peer dependencies](https://nodejs.org/en/blog/npm/peer-dependencies/). Note that NPM(version 4-6) doesn't install peer dependencies automatically. Instead it will show you a warning message with instructions on how to install them. If using Npm 7.X.X version, peer dependencies will be installed automatically.
+In order to avoid version conflicts in your project, you must specify and install [react](https://www.npmjs.com/package/react), [react-dom](https://www.npmjs.com/package/react-dom) as [peer dependencies](https://nodejs.org/en/blog/npm/peer-dependencies/). Supported versions are React and ReactDOM `^16.8.0 || ^17.0.0 || ^18.0.0` (the component is built with hooks, and is `StrictMode` and concurrent rendering safe on React 18). Note that NPM(version 4-6) doesn't install peer dependencies automatically. Instead it will show you a warning message with instructions on how to install them. If using Npm 7.X.X version, peer dependencies will be installed automatically.
 
 If you're using the UMD builds, you'd also need to install the peer dependencies in your application:
 
@@ -428,6 +432,19 @@ Type: `bool` (default: `false`)
 
 `disablePoppingOnBackspace=true` attribute indicates that when a user triggers a 'backspace' keyDown in the empty search bar, the tree will not deselect nodes.
 
+### classNames
+
+Type: `object` (default: `undefined`)
+
+Extra class names added next to the default ones, keyed by element: `root`, `dropdown`, `trigger`, `tags`, `tag`, `input`, `content`, `tree`, `node`, `toggle`, `checkbox` and `label`. Mostly useful with [`DropdownTreeSelectUnstyled`](#unstyled-component), e.g. to style it with utility classes:
+
+```jsx
+<DropdownTreeSelectUnstyled
+  data={data}
+  classNames={{ trigger: 'btn btn-light', node: 'py-1', checkbox: 'form-check-input' }}
+/>
+```
+
 ## Styling and Customization
 
 ### Default styles
@@ -479,6 +496,92 @@ Once you import default styles, it is easy to add/override the provided styles t
 - [With Bootstrap](/docs/examples/bootstrap)
 - [With Material Design ](/docs/examples/material)
 
+The styles are also exported as `react-dropdown-tree-select/styles.css` (the `react-dropdown-tree-select/dist/styles.css` path keeps working).
+
+## Headless usage
+
+The `react-dropdown-tree-select/headless` entry point contains the component logic **without any CSS**. It exports the same types as the main entry plus:
+
+- `DropdownTreeSelectUnstyled`: renders the same markup and class names as `DropdownTreeSelect` (same props and `ref`) but doesn't import the default styles. Use it to bring your own styles, optionally through the [`classNames`](#classnames) prop.
+- `useDropdownTreeSelect(props)`: a hook that returns the state, actions and prop getters behind the component, so you can render any markup you like.
+
+Both are also exported from the main entry (`import { useDropdownTreeSelect } from 'react-dropdown-tree-select'`), which does import the styles. When using the UMD builds, `dist/headless.js` exposes the `ReactDropdownTreeSelectHeadless` global.
+
+### Unstyled component
+
+```jsx
+import { DropdownTreeSelectUnstyled } from 'react-dropdown-tree-select/headless'
+import './my-dropdown.css'
+
+const MyDropdown = () => <DropdownTreeSelectUnstyled data={data} classNames={{ trigger: 'my-trigger' }} />
+```
+
+### useDropdownTreeSelect
+
+`useDropdownTreeSelect` accepts the same options as the component [props](#props) and returns:
+
+| Group        | Members                                                                                                                                                                                                                                                                          |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| State        | `tree` (visible nodes in render order: `{ id, parentId, label, value, depth, isLeaf, expanded, checked, partial, focused, disabled, node }`), `tags` (`{ id, label, disabled, node }`), `isOpen`, `searchTerm`, `searchModeOn`, `allNodesHidden`, `activeDescendant`, `clientId` |
+| Actions      | `open()`, `close()`, `toggle()`, `setSearch(term)`, `toggleNode(id)`, `checkNode(id, checked)`, `removeTag(id)`, `handleKeyDown(event)`                                                                                                                                          |
+| Prop getters | `getRootProps()`, `getTriggerProps()`, `getInputProps()`, `getContentProps()`, `getListProps()`, `getNodeProps(node)`, `getCheckboxProps(node)`, `getToggleProps(node)`, `getTagProps(tag)`, `getTagRemoveProps(tag)`                                                            |
+
+The prop getters return the ids, ARIA attributes, refs and event handlers used by the default markup (outside click detection, keyboard navigation, `aria-activedescendant`, ...). Spread them on your elements; to add your own props pass them to the getter instead of setting them next to it: event handlers are chained, `className`s concatenated, `style`s and refs merged.
+
+```jsx
+import { useDropdownTreeSelect } from 'react-dropdown-tree-select/headless'
+
+const ChipsSelect = props => {
+  const {
+    tree,
+    tags,
+    isOpen,
+    getRootProps,
+    getTriggerProps,
+    getInputProps,
+    getListProps,
+    getNodeProps,
+    getCheckboxProps,
+    getToggleProps,
+    getTagProps,
+    getTagRemoveProps,
+  } = useDropdownTreeSelect(props)
+
+  return (
+    <div {...getRootProps({ className: 'chips' })}>
+      <div {...getTriggerProps()}>
+        {tags.map(tag => (
+          <span key={tag.id} {...getTagProps(tag)}>
+            {tag.label}
+            <button {...getTagRemoveProps(tag)}>×</button>
+          </span>
+        ))}
+        <input {...getInputProps()} />
+      </div>
+      {isOpen && (
+        <ul {...getListProps()}>
+          {tree.map(node => (
+            <li key={node.id} {...getNodeProps(node, { style: { paddingLeft: node.depth * 16 } })}>
+              {!node.isLeaf && <button {...getToggleProps(node)}>{node.expanded ? '−' : '+'}</button>}
+              <label>
+                <input {...getCheckboxProps(node)} />
+                {node.label}
+              </label>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+```
+
+Notes:
+
+- `getRootProps` must be applied to the element wrapping everything else: its ref is used to close the dropdown on outside clicks.
+- `getInputProps` debounces typing like the component does; `setSearch` applies a search term immediately.
+- `getNodeProps` returns the default `node` class names (`tree`/`leaf`, `checked`, `partial`, `focused`, `hide`, ...) and the default indentation; override them through the user props if needed.
+
 ## Keyboard navigation
 
 Adds navigation with `arrow` keys, `page down/up` / `home/end` and toggle of selection with `enter`. `Arrow/page up/down` also toggles open of dropdown if closed.
@@ -511,12 +614,28 @@ The dropdown renders only visible content and skips any nodes that are going to 
 
 ~~Planned feature: Use [react-virtualized](https://github.com/bvaughn/react-virtualized) to take this to the next level.~~ The search tree now uses infinite scroll, limiting search results to 100 items initially (more load seamlessly as you scroll) - this results in super fast rendering even with large number of nodes (see [#80](https://github.com/dowjones/react-dropdown-tree-select/issues/80)).
 
+### Avoiding re-initialization on parent re-renders
+
+The component builds its internal tree state from `data` once and only rebuilds it when `data` (by reference), `mode`, `showPartiallySelected`, `searchPredicate` or `id` change. Re-rendering the parent with the same `data` reference is cheap and keeps the internal state (expanded nodes, search, keyboard focus) intact.
+
+Passing a new `data` reference (e.g. building the array inline in `render`) re-initializes the tree from the new data: checked/expanded state is taken from the new data, while the keyboard focus is preserved. Keep `data` referentially stable (e.g. with `useMemo` or state) when the tree has not changed.
+
+> Prior to the hooks rewrite, the component rebuilt its tree on every parent re-render regardless of whether `data` changed.
+
 ### Reducing costly DOM manipulations
 
 The tree tries to minimize the DOM manipulations as much as possible. E.g., during searching, the non-matching nodes are simply `hidden` and css adjusted on remaining to create the perception of a new filtered list.
 Node toggling also achieves the expand/collapse effect by manipulating css classes instead of creating new tree with filtered out nodes.
 
 ## FAQ
+
+### Why do generated ids look different on React 18?
+
+When no `id` prop is passed, an id is generated for each instance and used as a prefix for node ids (`<id>-0`, `<id>-0-1`, ...). On React 18 it is derived from [`React.useId`](https://react.dev/reference/react/useId) (e.g. `rdtsr0`), which keeps ids stable between server rendering and hydration. On React 16.8/17 the previous incremental format (`rdts1`, `rdts2`, ...) is used. Pass an explicit `id` if you need predictable ids.
+
+### Can I still access the instance via `ref`?
+
+Yes. The component is a function component, but a `ref` still exposes the previously public instance members: `node` (the root element), `searchInput`, `keepDropdownActive` and `handleClick()` (toggles the dropdown).
 
 ### How do I change the placeholder text?
 
