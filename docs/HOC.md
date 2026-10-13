@@ -4,13 +4,13 @@ This documentation is about expanding react-dropdown-tree-select using Higher Or
 
 ## Table of Contents
 
-* [What are HOCs](#what-are-hocs)
-* [Why use a HOC](#why-use-a-hoc)
-* [Examples](#examples)
-  * [External Select All, Unselect All buttons](#external-select-all--unselect-all-buttons)
-  * [Internal Select All Checkbox](#internal-select-all-checkbox)
-  * [Prevent re-render on parent prop/state changes](#prevent-re-render-on-parent-prop-state-changes)
-  * [Tree Node Paths](#tree-node-paths)
+- [What are HOCs](#what-are-hocs)
+- [Why use a HOC](#why-use-a-hoc)
+- [Examples](#examples)
+  - [External Select All, Unselect All buttons](#external-select-all--unselect-all-buttons)
+  - [Internal Select All Checkbox](#internal-select-all-checkbox)
+  - [Prevent re-render on parent prop/state changes](#prevent-re-render-on-parent-prop-state-changes)
+  - [Tree Node Paths](#tree-node-paths)
 
 ## What are HOCs
 
@@ -48,14 +48,14 @@ This example shows how to add a special Select All checkbox within the dropdown 
 
 ### Prevent re-render on parent prop/state changes
 
-Once initialized, the component (react-dropdown-tree-select) manages its own internal state. However, if this component is part of another component, then due to React's nature, anytime the parent is re-rendered, this component will re-render. While React's Virtual DOM diffing will cancel out any ultimate DOM modifications, it'll still go through all of its initialization process. This can be a waste of computation if the tree data hasn't changed.
+Once initialized, the component (react-dropdown-tree-select) manages its own internal state. It only re-initializes that state when the `data` prop changes by reference (or `mode`, `showPartiallySelected`, `searchPredicate`, `id` change), so re-rendering the parent with the same `data` reference is cheap and keeps expanded/search/focus state.
 
-To prevent that, this HOC simply adds a deep equality check in its `shouldComponentUpdate`.
+If your parent creates a new `data` array on every render (e.g. from a store selector or by mapping API results inline) even though the content has not changed, every parent render re-initializes the tree. The simplest fix is to keep `data` referentially stable (`useMemo`, state, memoized selectors). Alternatively, this HOC adds a deep equality check (`shouldComponentUpdate`, or `React.memo` with a custom comparison) so the component does not re-render at all for equal data.
 
 This is not baked in the component since:
 
-* Deep equality check can be expensive if the tree is large
-* Not everyone may need this check
+- Deep equality check can be expensive if the tree is large
+- Not everyone may need this check
 
 [![Edit Prevent re-render on parent render with React Dropdown Tree Select](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/v05klkn56l)
 
