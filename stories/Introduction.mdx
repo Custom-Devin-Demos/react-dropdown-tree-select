@@ -1,0 +1,23 @@
+import { Markdown, Meta } from '@storybook/blocks'
+
+import Readme from '../README.md?raw'
+import { prepareMarkdown } from './utils/markdown'
+
+<Meta title="Introduction" />
+
+export const DocsLink = ({ href, children, ...props }) => {
+  if (href === '/docs/HOC.md') {
+    return (
+      <a href="./?path=/docs/guides-hoc--docs" target="_top" {...props}>
+        {children}
+      </a>
+    )
+  }
+  return (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  )
+}
+
+<Markdown options={{ overrides: { a: DocsLink } }}>{prepareMarkdown(Readme)}</Markdown>

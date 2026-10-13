@@ -129,7 +129,7 @@ Visit [unpkg.com](https://unpkg.com/#/) to see other options.
 
 ### Peer Dependencies
 
-In order to avoid version conflicts in your project, you must specify and install [react](https://www.npmjs.com/package/react), [react-dom](https://www.npmjs.com/package/react-dom) as [peer dependencies](https://nodejs.org/en/blog/npm/peer-dependencies/). Note that NPM(version 4-6) doesn't install peer dependencies automatically. Instead it will show you a warning message with instructions on how to install them. If using Npm 7.X.X version, peer dependencies will be installed automatically.
+In order to avoid version conflicts in your project, you must specify and install [react](https://www.npmjs.com/package/react), [react-dom](https://www.npmjs.com/package/react-dom) as [peer dependencies](https://nodejs.org/en/blog/npm/peer-dependencies/). Supported versions are React and ReactDOM `^16.8.0 || ^17.0.0 || ^18.0.0` (the component is built with hooks, and is `StrictMode` and concurrent rendering safe on React 18). Note that NPM(version 4-6) doesn't install peer dependencies automatically. Instead it will show you a warning message with instructions on how to install them. If using Npm 7.X.X version, peer dependencies will be installed automatically.
 
 If you're using the UMD builds, you'd also need to install the peer dependencies in your application:
 
@@ -428,6 +428,25 @@ Type: `bool` (default: `false`)
 
 `disablePoppingOnBackspace=true` attribute indicates that when a user triggers a 'backspace' keyDown in the empty search bar, the tree will not deselect nodes.
 
+### virtualized
+
+Type: `bool | { itemHeight?: number, overscan?: number, height?: number }` (default: `false`)
+
+Renders the dropdown list with windowing ([@tanstack/react-virtual](https://tanstack.com/virtual)): only the rows in view (plus `overscan` rows around them) are in the DOM, so trees with 100k+ nodes open, scroll and search smoothly. `true` uses the defaults:
+
+| Option       | Default | Description                                                                                          |
+| ------------ | ------- | ---------------------------------------------------------------------------------------------------- |
+| `itemHeight` | `32`    | Estimated row height in px. Rows are measured after rendering, so custom CSS row heights still work. |
+| `overscan`   | `10`    | Number of extra rows rendered above and below the visible ones.                                      |
+| `height`     | `300`   | Max height of the scrollable list (`ul.root`) in px.                                                 |
+
+```jsx
+<DropdownTreeSelect data={hugeTree} virtualized />
+<DropdownTreeSelect data={hugeTree} virtualized={{ itemHeight: 28, height: 400 }} />
+```
+
+When enabled, `ul.root` gets the additional `virtualized` class and is wrapped in a scroll container `div.virtualized-viewport` (instead of the infinite scroll wrapper inside it), every rendered `li` gets `aria-setsize`, `aria-posinset` (position among its visible siblings) and `aria-level`, and keyboard navigation scrolls the focused node into view. When `false` (default) the list renders exactly as before, using infinite scroll.
+
 ## Styling and Customization
 
 ### Default styles
@@ -509,7 +528,17 @@ The tree debounces key presses to avoid costly search calculations. The default 
 
 The dropdown renders only visible content and skips any nodes that are going to hidden from the user. E.g., if a parent node is not expanded, there is no point in rendering children since they will not be visible anyway.
 
-~~Planned feature: Use [react-virtualized](https://github.com/bvaughn/react-virtualized) to take this to the next level.~~ The search tree now uses infinite scroll, limiting search results to 100 items initially (more load seamlessly as you scroll) - this results in super fast rendering even with large number of nodes (see [#80](https://github.com/dowjones/react-dropdown-tree-select/issues/80)).
+By default the tree uses infinite scroll, rendering the first 100 visible nodes initially (more load seamlessly as you scroll) - this results in fast rendering even with large number of nodes. However, every scrolled-in page stays in the DOM, so scrolling through tens of thousands of expanded nodes or search results gets progressively slower.
+
+For very large trees set the [`virtualized`](#virtualized) prop: the list is windowed so only the rows in view (plus a small overscan) are ever in the DOM, regardless of how many nodes are expanded or matched. On a generated 100k-node tree (100 roots × 10 × 100) the tree builds in ~45ms, searches in < 30ms and opens fully expanded with ~20 `li` elements in the DOM (run `yarn bench` to reproduce). See the `Performance` stories in Storybook.
+
+### Avoiding re-initialization on parent re-renders
+
+The component builds its internal tree state from `data` once and only rebuilds it when `data` (by reference), `mode`, `showPartiallySelected`, `searchPredicate` or `id` change. Re-rendering the parent with the same `data` reference is cheap and keeps the internal state (expanded nodes, search, keyboard focus) intact.
+
+Passing a new `data` reference (e.g. building the array inline in `render`) re-initializes the tree from the new data: checked/expanded state is taken from the new data, while the keyboard focus is preserved. Keep `data` referentially stable (e.g. with `useMemo` or state) when the tree has not changed.
+
+> Prior to the hooks rewrite, the component rebuilt its tree on every parent re-render regardless of whether `data` changed.
 
 ### Reducing costly DOM manipulations
 
@@ -517,6 +546,14 @@ The tree tries to minimize the DOM manipulations as much as possible. E.g., duri
 Node toggling also achieves the expand/collapse effect by manipulating css classes instead of creating new tree with filtered out nodes.
 
 ## FAQ
+
+### Why do generated ids look different on React 18?
+
+When no `id` prop is passed, an id is generated for each instance and used as a prefix for node ids (`<id>-0`, `<id>-0-1`, ...). On React 18 it is derived from [`React.useId`](https://react.dev/reference/react/useId) (e.g. `rdtsr0`), which keeps ids stable between server rendering and hydration. On React 16.8/17 the previous incremental format (`rdts1`, `rdts2`, ...) is used. Pass an explicit `id` if you need predictable ids.
+
+### Can I still access the instance via `ref`?
+
+Yes. The component is a function component, but a `ref` still exposes the previously public instance members: `node` (the root element), `searchInput`, `keepDropdownActive` and `handleClick()` (toggles the dropdown).
 
 ### How do I change the placeholder text?
 
