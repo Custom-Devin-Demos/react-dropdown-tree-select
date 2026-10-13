@@ -14,7 +14,7 @@
     cursor: not-allowed;
   }
 
-  &.load-error > .node-label {
+  &.load-error > label > .node-label {
     color: #c00;
   }
 
