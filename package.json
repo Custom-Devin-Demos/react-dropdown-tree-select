@@ -71,7 +71,8 @@
     "dist/headless.*",
     "dist/styles.*",
     "dist/types",
-    "headless"
+    "headless",
+    "MIGRATION.md"
   ],
   "dependencies": {
     "@tanstack/react-virtual": "^3.13.12",

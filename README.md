@@ -26,19 +26,23 @@
 
 A lightweight and fast control to render a select component that can display hierarchical tree data. In addition, the control shows the selection in pills and allows user to search the options for quick filtering and selection. Also supports displaying partially selected nodes.
 
+- Written in TypeScript: type declarations ship with the package, no `@types/*` needed.
+- Built with hooks: React `^16.8 || ^17 || ^18`, `StrictMode` and concurrent rendering safe on React 18.
+- Scales to 100k+ nodes with opt-in [virtualized rendering](#virtualized), and loads children on demand with [`loadChildren`](#loadchildren).
+- Ships a [headless API](#headless-usage) (`useDropdownTreeSelect` hook and `DropdownTreeSelectUnstyled`) to bring your own styles or markup.
+
+Upgrading from v2? See the [migration guide](MIGRATION.md).
+
 ## Table of Contents
 
 - [Screenshot](#screenshot)
 - [Demo](#demo)
-  - [Vanilla, no framework](#vanilla-no-framework)
-  - [With Bootstrap](#with-bootstrap)
-  - [With Material Design](#with-material-design)
-  - [As Single Select](#as-single-select)
 - [Install](#install)
   - [As NPM package](#as-npm-package)
   - [Using a CDN](#using-a-cdn)
   - [Peer Dependencies](#peer-dependencies)
 - [Usage](#usage)
+- [TypeScript](#typescript)
 - [Props](#props)
   - [className](#classname)
   - [clearSearchOnChange](#clearsearchonchange)
@@ -68,6 +72,7 @@ A lightweight and fast control to render a select component that can display hie
   - [tabIndex](#tabIndex)
   - [disablePoppingOnBackspace](#disablePoppingOnBackspace)
   - [classNames](#classnames)
+  - [virtualized](#virtualized)
   - [loadChildren](#loadchildren)
   - [onLoadChildrenError](#onloadchildrenerror)
 - [Styling and Customization](#styling-and-customization)
@@ -81,9 +86,12 @@ A lightweight and fast control to render a select component that can display hie
   - [Search optimizations](#search-optimizations)
   - [Search debouncing](#search-debouncing)
   - [Virtualized rendering](#virtualized-rendering)
+  - [Combining virtualization and lazy loading](#combining-virtualization-and-lazy-loading)
+  - [Avoiding re-initialization on parent re-renders](#avoiding-re-initialization-on-parent-re-renders)
   - [Reducing costly DOM manipulations](#reducing-costly-dom-manipulations)
 - [FAQ](#faq)
 - [Doing more with HOCs](/docs/HOC.md)
+- [Migrating from v2](MIGRATION.md)
 - [Development](#development)
 - [License](#license)
 - [Contributors](#contributors)
@@ -94,21 +102,17 @@ A lightweight and fast control to render a select component that can display hie
 
 ## Demo
 
-##### Vanilla, no framework
+The [Storybook](https://dowjones.github.io/react-dropdown-tree-select/) has live, editable examples of every feature (use the Controls panel to try the props):
 
-Online demo: https://dowjones.github.io/react-dropdown-tree-select/#/story/with-vanilla-styles
+| Section     | Stories                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Examples    | [Basic](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/examples-basic-no-extra-styles--basic), [Options](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/examples-options--options), [Default Values](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/examples-default-values--default-values), [Large Tree](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/examples-large-tree--large-tree), [Keyboard Navigation](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/examples-keyboard-navigation--keyboard-navigation) |
+| Modes       | [multiSelect](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/modes-select-modes--multi-select), [hierarchical](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/modes-select-modes--hierarchical), [simpleSelect](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/modes-select-modes--simple-select), [radioSelect](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/modes-select-modes--radio-select)                                                                                                                                       |
+| Features    | [Lazy Loading](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/features-lazy-loading--lazy-loading), [Lazy Loading with failures](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/features-lazy-loading--with-random-failures), [Virtualized + Lazy Loading](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/features-combined--virtualized-lazy-loading)                                                                                                                                                                                                      |
+| Headless    | [Unstyled Component](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/headless-headless-api--unstyled-component), [Custom UI with useDropdownTreeSelect](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/headless-headless-api--custom-ui)                                                                                                                                                                                                                                                                                                                                         |
+| Performance | [100k Nodes (virtualized)](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/performance-virtualization--virtualized-100-k), [Virtualized vs. Infinite Scroll](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/performance-virtualization--side-by-side-15-k)                                                                                                                                                                                                                                                                                                                       |
 
-##### With Bootstrap
-
-Online demo: https://dowjones.github.io/react-dropdown-tree-select/#/story/with-bootstrap-styles
-
-##### With Material Design
-
-Online demo: https://dowjones.github.io/react-dropdown-tree-select/#/story/with-material-design-styles
-
-##### As Single Select
-
-Online demo: https://dowjones.github.io/react-dropdown-tree-select/#/story/simple-select
+Styling with Bootstrap, Material Design and other frameworks: see the [CodeSandbox examples](https://dowjones.github.io/react-dropdown-tree-select/?path=/docs/guides-codesandbox-examples--docs).
 
 ## Install
 
@@ -130,6 +134,8 @@ You can import the standalone UMD build from a CDN such as:
 <link href="https://unpkg.com/react-dropdown-tree-select/dist/styles.css" rel="stylesheet" />
 ```
 
+The UMD build exposes the `ReactDropdownTreeSelect` global (and `dist/headless.js` the `ReactDropdownTreeSelectHeadless` global, without styles).
+
 **Note:** Above example will always fetch the latest version. To fetch a specific version, use `https://unpkg.com/react-dropdown-tree-select@<version>/dist/...`
 Visit [unpkg.com](https://unpkg.com/#/) to see other options.
 
@@ -140,18 +146,18 @@ In order to avoid version conflicts in your project, you must specify and instal
 If you're using the UMD builds, you'd also need to install the peer dependencies in your application:
 
 ```html
-<script src="https://unpkg.com/react/dist/react.js"></script>
-<script src="https://unpkg.com/react-dom/dist/react-dom.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 ```
 
 ## Usage
 
 ```jsx
 import React from 'react'
-import ReactDOM from 'react-dom'
+import { createRoot } from 'react-dom/client'
 
 import DropdownTreeSelect from 'react-dropdown-tree-select'
-import 'react-dropdown-tree-select/dist/styles.css'
+import 'react-dropdown-tree-select/styles.css'
 
 const data = {
   label: 'search me',
@@ -180,11 +186,79 @@ const onNodeToggle = currentNode => {
   console.log('onNodeToggle::', currentNode)
 }
 
-ReactDOM.render(
-  <DropdownTreeSelect data={data} onChange={onChange} onAction={onAction} onNodeToggle={onNodeToggle} />,
-  document.body
-) // in real world, you'd want to render to an element, instead of body.
+const App = () => <DropdownTreeSelect data={data} onChange={onChange} onAction={onAction} onNodeToggle={onNodeToggle} />
+
+createRoot(document.getElementById('root')).render(<App />)
 ```
+
+On React 16.8/17 render with `ReactDOM.render(<App />, element)` instead of `createRoot`. Define `data` outside of the component (or memoize it): the tree is only rebuilt when the `data` reference changes, see [Avoiding re-initialization on parent re-renders](#avoiding-re-initialization-on-parent-re-renders).
+
+The main entry imports its styles (`react-dropdown-tree-select/styles.css`, also available as `react-dropdown-tree-select/dist/styles.css`). If your bundler is not set up to import CSS from `node_modules`, see [Default styles](#default-styles), or use the CSS-free [headless entry](#headless-usage).
+
+## TypeScript
+
+The package is written in TypeScript and ships its declarations (`dist/react-dropdown-tree-select.d.ts`, resolved through `package.json#types` and the `exports` map). Import the types from the package root (or from `react-dropdown-tree-select/headless`, which exports the same types):
+
+```tsx
+import React, { useMemo, useRef } from 'react'
+import DropdownTreeSelect, {
+  DropdownTreeSelectProps,
+  NodeAction,
+  TreeNode,
+  TreeNodeProps,
+} from 'react-dropdown-tree-select'
+import 'react-dropdown-tree-select/styles.css'
+
+interface Region extends TreeNodeProps {
+  code: string // extra properties are passed back in `onChange`
+}
+
+const regions: Region[] = [
+  { label: 'Europe', value: 'europe', code: 'EU', hasChildren: true },
+  { label: 'Asia', value: 'asia', code: 'AS', hasChildren: true },
+]
+
+const loadChildren = async (node: TreeNode): Promise<TreeNodeProps[]> => {
+  const response = await fetch(`/api/regions/${node.value}/children`)
+  return response.json()
+}
+
+const onChange: DropdownTreeSelectProps['onChange'] = (currentNode: TreeNode, selectedNodes: TreeNode[]) => {
+  console.log(
+    currentNode.code,
+    selectedNodes.map(node => node.value)
+  )
+}
+
+const onAction = (node: TreeNode, action: NodeAction) => console.log(action.className, node.label)
+
+export const RegionSelect = (props: Partial<DropdownTreeSelectProps>) => {
+  const ref = useRef<DropdownTreeSelect>(null)
+  const data = useMemo(() => regions, [])
+
+  return (
+    <>
+      <DropdownTreeSelect
+        ref={ref}
+        data={data}
+        mode="hierarchical"
+        onChange={onChange}
+        onAction={onAction}
+        loadChildren={loadChildren}
+        onLoadChildrenError={(node, error) => console.error(`Could not load ${node.label}`, error)}
+        virtualized={{ itemHeight: 32, height: 400 }}
+        texts={{ placeholder: 'Choose a region', loadingChildren: 'Fetching...' }}
+        {...props}
+      />
+      <button onClick={() => ref.current?.handleClick()}>Toggle</button>
+    </>
+  )
+}
+```
+
+- `DropdownTreeSelect` is usable both as a value and as the ref type (`useRef<DropdownTreeSelect>(null)`); the ref exposes `node`, `searchInput` and `handleClick()`.
+- Exported types: `DropdownTreeSelectProps`, `DropdownTreeSelectState`, `TreeNode`, `TreeNodeProps`, `TreeData`, `Mode`, `ShowDropdownState`, `TextProps`, `NodeAction`, `NodeDataSet`, `VirtualizationOptions`, `DropdownTreeSelectClassNames`, `DropdownTreeSelectHandle` (the ref surface) and the headless types (`UseDropdownTreeSelectOptions`, `UseDropdownTreeSelectResult`, `DropdownTreeSelectNode`, `DropdownTreeSelectTag`).
+- The declarations are generated from the source, they replace the hand-written `types/react-dropdown-tree-select.d.ts` of v2 (see [MIGRATION.md](MIGRATION.md)).
 
 ## Props
 
@@ -282,7 +356,7 @@ Data for rendering the tree select items. The object requires the following stru
   dataset,        // optional: Allows data-* attributes to be set on the node and tag elements
   isDefaultValue, // optional: Indicate if a node is a default value. When true, the dropdown will automatically select the node(s) when there is no other selected node. Can be used on more than one node.
   tagLabel,       // optional: tag label in case you need it to differ from the checkbox label
-  hasChildren,    // optional: If true, the node is expandable even without `children`; they are fetched with `loadChildren` on first expand
+  hasChildren,    // optional: If true, the node is expandable even without `children`; they are fetched with [`loadChildren`](#loadchildren) on first expand
   ...             // optional: Any extra properties that you'd like to receive during `onChange` event
 }
 ```
@@ -459,7 +533,7 @@ Renders the dropdown list with windowing ([@tanstack/react-virtual](https://tans
 | ------------ | ------- | ---------------------------------------------------------------------------------------------------- |
 | `itemHeight` | `32`    | Estimated row height in px. Rows are measured after rendering, so custom CSS row heights still work. |
 | `overscan`   | `10`    | Number of extra rows rendered above and below the visible ones.                                      |
-| `height`     | `300`   | Max height of the scrollable list (`ul.root`) in px.                                                 |
+| `height`     | `300`   | Max height of the scroll container (`div.virtualized-viewport`) in px.                               |
 
 ```jsx
 <DropdownTreeSelect data={hugeTree} virtualized />
@@ -467,6 +541,10 @@ Renders the dropdown list with windowing ([@tanstack/react-virtual](https://tans
 ```
 
 When enabled, `ul.root` gets the additional `virtualized` class and is wrapped in a scroll container `div.virtualized-viewport` (instead of the infinite scroll wrapper inside it), every rendered `li` gets `aria-setsize`, `aria-posinset` (position among its visible siblings) and `aria-level`, and keyboard navigation scrolls the focused node into view. When `false` (default) the list renders exactly as before, using infinite scroll.
+
+> **Scroll container:** with `virtualized`, the element that scrolls is `div.virtualized-viewport`, not `ul.root`. Move any CSS that sets `max-height`/`overflow` on `ul.root`, and any code that reads or sets `scrollTop` on it, to `.virtualized-viewport` (or use the `height` option).
+
+Works together with [`loadChildren`](#loadchildren), see [Combining virtualization and lazy loading](#combining-virtualization-and-lazy-loading). Stories: [100k Nodes (virtualized)](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/performance-virtualization--virtualized-100-k), [Virtualized vs. Infinite Scroll](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/performance-virtualization--side-by-side-15-k).
 
 ### loadChildren
 
@@ -501,11 +579,13 @@ const loadChildren = node => fetch(`/api/regions/${node.value}/children`).then(r
 
 Without `loadChildren`, `hasChildren` nodes simply toggle their expanded state.
 
+The loading/error state is also exposed by the headless API: [`useDropdownTreeSelect`](#usedropdowntreeselect) nodes have `loading`/`loadError` flags and `getNodeProps(node)` returns the `loading`/`load-error` classes and `aria-busy`. Stories: [Lazy Loading](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/features-lazy-loading--lazy-loading), [With Random Failures](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/features-lazy-loading--with-random-failures).
+
 ### onLoadChildrenError
 
 Type: `(node: TreeNode, error: unknown) => void`
 
-Fires when the promise returned by [`loadChildren`](#loadchildren) rejects.
+Fires when the promise returned by [`loadChildren`](#loadchildren) rejects (or `loadChildren` throws), with the node that failed to load and the rejection reason. The node gets the `load-error` class until it is expanded (and loaded) again. See the [With Random Failures](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/features-lazy-loading--with-random-failures) story.
 
 ## Styling and Customization
 
@@ -515,7 +595,7 @@ The component brings minimal styles for bare-bones functional rendering. It is k
 
 #### Using WebPack
 
-If you're using a bundler like WebPack, make sure you configure WebPack to import the default styles. To do so, simply add this rule to your WebPack config:
+The main entry imports `styles.css`, so your bundler needs to handle CSS imported from `node_modules`. With WebPack, add a rule for it (or use `mini-css-extract-plugin` instead of `style-loader` to emit a CSS file):
 
 ```js
 // allow WebPack to import/bundle styles from node_modules for this component
@@ -523,19 +603,14 @@ module: {
   rules: [
     {
       test: /\.css$/,
-      use: ExtractTextPlugin.extract({
-        fallback: 'style-loader',
-        use: [
-          {
-            loader: 'css-loader',
-          },
-        ],
-      }),
+      use: ['style-loader', 'css-loader'],
       include: /node_modules[/\\]react-dropdown-tree-select/,
     },
   ]
 }
 ```
+
+Vite, Next.js, Parcel and most modern bundlers handle CSS imports out of the box.
 
 #### Using a CDN
 
@@ -553,10 +628,7 @@ You can reference the files from `node_modules/react-dropdown-tree-select/dist/s
 
 ### Customizing styles
 
-Once you import default styles, it is easy to add/override the provided styles to match popular frameworks. Checkout `/docs` folder for some examples.
-
-- [With Bootstrap](/docs/examples/bootstrap)
-- [With Material Design ](/docs/examples/material)
+Once you import default styles, it is easy to add/override the provided styles to match popular frameworks. See the [CodeSandbox examples](https://dowjones.github.io/react-dropdown-tree-select/?path=/docs/guides-codesandbox-examples--docs) for Bootstrap, Material Design and more. To start from scratch without the default styles, use the [headless entry](#headless-usage) and the [`classNames`](#classnames) prop.
 
 The styles are also exported as `react-dropdown-tree-select/styles.css` (the `react-dropdown-tree-select/dist/styles.css` path keeps working).
 
@@ -569,6 +641,8 @@ The `react-dropdown-tree-select/headless` entry point contains the component log
 
 Both are also exported from the main entry (`import { useDropdownTreeSelect } from 'react-dropdown-tree-select'`), which does import the styles. When using the UMD builds, `dist/headless.js` exposes the `ReactDropdownTreeSelectHeadless` global.
 
+See the [Unstyled Component](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/headless-headless-api--unstyled-component) and [Custom UI with useDropdownTreeSelect](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/headless-headless-api--custom-ui) stories.
+
 ### Unstyled component
 
 ```jsx
@@ -578,15 +652,17 @@ import './my-dropdown.css'
 const MyDropdown = () => <DropdownTreeSelectUnstyled data={data} classNames={{ trigger: 'my-trigger' }} />
 ```
 
+It supports every prop of the styled component, including [`virtualized`](#virtualized) (the `tree`/`node` class names are applied to the virtualized list too) and [`loadChildren`](#loadchildren). To add the default styles back, `import 'react-dropdown-tree-select/styles.css'`.
+
 ### useDropdownTreeSelect
 
 `useDropdownTreeSelect` accepts the same options as the component [props](#props) and returns:
 
-| Group        | Members                                                                                                                                                                                                                                                                          |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| State        | `tree` (visible nodes in render order: `{ id, parentId, label, value, depth, isLeaf, expanded, checked, partial, focused, disabled, node }`), `tags` (`{ id, label, disabled, node }`), `isOpen`, `searchTerm`, `searchModeOn`, `allNodesHidden`, `activeDescendant`, `clientId` |
-| Actions      | `open()`, `close()`, `toggle()`, `setSearch(term)`, `toggleNode(id)`, `checkNode(id, checked)`, `removeTag(id)`, `handleKeyDown(event)`                                                                                                                                          |
-| Prop getters | `getRootProps()`, `getTriggerProps()`, `getInputProps()`, `getContentProps()`, `getListProps()`, `getNodeProps(node)`, `getCheckboxProps(node)`, `getToggleProps(node)`, `getTagProps(tag)`, `getTagRemoveProps(tag)`                                                            |
+| Group        | Members                                                                                                                                                                                                                                                                                              |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| State        | `tree` (visible nodes in render order: `{ id, parentId, label, value, depth, isLeaf, expanded, checked, partial, focused, disabled, loading, loadError, node }`), `tags` (`{ id, label, disabled, node }`), `isOpen`, `searchTerm`, `searchModeOn`, `allNodesHidden`, `activeDescendant`, `clientId` |
+| Actions      | `open()`, `close()`, `toggle()`, `setSearch(term)`, `toggleNode(id)`, `checkNode(id, checked)`, `removeTag(id)`, `handleKeyDown(event)`                                                                                                                                                              |
+| Prop getters | `getRootProps()`, `getTriggerProps()`, `getInputProps()`, `getContentProps()`, `getListProps()`, `getNodeProps(node)`, `getCheckboxProps(node)`, `getToggleProps(node)`, `getTagProps(tag)`, `getTagRemoveProps(tag)`                                                                                |
 
 The prop getters return the ids, ARIA attributes, refs and event handlers used by the default markup (outside click detection, keyboard navigation, `aria-activedescendant`, ...). Spread them on your elements; to add your own props pass them to the getter instead of setting them next to it: event handlers are chained, `className`s concatenated, `style`s and refs merged.
 
@@ -642,7 +718,9 @@ Notes:
 
 - `getRootProps` must be applied to the element wrapping everything else: its ref is used to close the dropdown on outside clicks.
 - `getInputProps` debounces typing like the component does; `setSearch` applies a search term immediately.
-- `getNodeProps` returns the default `node` class names (`tree`/`leaf`, `checked`, `partial`, `focused`, `hide`, ...) and the default indentation; override them through the user props if needed.
+- `getNodeProps` returns the default `node` class names (`tree`/`leaf`, `checked`, `partial`, `focused`, `hide`, `loading`, `load-error`, ...), ARIA attributes (including `aria-busy` while loading) and the default indentation; override them through the user props if needed.
+- The hook accepts [`loadChildren`](#loadchildren)/[`onLoadChildrenError`](#onloadchildrenerror): `hasChildren` nodes are not leaves (`isLeaf: false`), `toggleNode(id)` triggers the load and `loading`/`loadError` reflect its state.
+- [`virtualized`](#virtualized) is accepted for parity with the component but only affects the built-in rendering: `tree` always contains every visible node, so window it with your own virtualizer (e.g. `@tanstack/react-virtual`) for very large trees.
 
 ## Keyboard navigation
 
@@ -676,7 +754,15 @@ The dropdown renders only visible content and skips any nodes that are going to 
 
 By default the tree uses infinite scroll, rendering the first 100 visible nodes initially (more load seamlessly as you scroll) - this results in fast rendering even with large number of nodes. However, every scrolled-in page stays in the DOM, so scrolling through tens of thousands of expanded nodes or search results gets progressively slower.
 
-For very large trees set the [`virtualized`](#virtualized) prop: the list is windowed so only the rows in view (plus a small overscan) are ever in the DOM, regardless of how many nodes are expanded or matched. On a generated 100k-node tree (100 roots × 10 × 100) the tree builds in ~45ms, searches in < 30ms and opens fully expanded with ~20 `li` elements in the DOM (run `yarn bench` to reproduce). See the `Performance` stories in Storybook.
+For very large trees set the [`virtualized`](#virtualized) prop: the list is windowed so only the rows in view (plus a small overscan) are ever in the DOM, regardless of how many nodes are expanded or matched. On a generated 100k-node tree (100 roots × 10 × 100) the tree builds in ~45ms, searches in < 30ms and opens fully expanded with ~20 `li` elements in the DOM (run `yarn bench` to reproduce). See the [Performance](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/performance-virtualization--virtualized-100-k) stories.
+
+### Combining virtualization and lazy loading
+
+`virtualized` and [`loadChildren`](#loadchildren) can be used together: loaded children are inserted into the windowed list, the loading row (`texts.loadingChildren`) is rendered right below the expanding node, and the DOM stays at roughly a viewport's worth of rows however many nodes get loaded. Try the [Virtualized + Lazy Loading (100k Nodes)](https://dowjones.github.io/react-dropdown-tree-select/?path=/story/features-combined--virtualized-lazy-loading) story.
+
+```jsx
+<DropdownTreeSelect data={hugeLazyTree} loadChildren={loadChildren} virtualized={{ height: 400 }} />
+```
 
 ### Avoiding re-initialization on parent re-renders
 
@@ -699,7 +785,7 @@ When no `id` prop is passed, an id is generated for each instance and used as a 
 
 ### Can I still access the instance via `ref`?
 
-Yes. The component is a function component, but a `ref` still exposes the previously public instance members: `node` (the root element), `searchInput`, `keepDropdownActive` and `handleClick()` (toggles the dropdown).
+Yes. The component is a function component, but a `ref` still exposes the previously public instance members (via `useImperativeHandle`): `node` (the root element), `searchInput`, `keepDropdownActive` and `handleClick()` (toggles the dropdown). Other instance members (state, internal methods) are no longer reachable; see [MIGRATION.md](MIGRATION.md).
 
 ### How do I change the placeholder text?
 
@@ -719,7 +805,7 @@ Easy style customization is one of the design goals of this component. Every vis
 }
 ```
 
-The css classes needed to override can be found by inspecting the component via developer tools (Chrome/Safari/IE/Edge/Firefox). You can also inspect the [source code](/src) or look in [examples](/docs/index.css).
+The css classes needed to override can be found by inspecting the component via developer tools (Chrome/Safari/IE/Edge/Firefox). You can also inspect the [source code](/src), the [default styles](/src/index.css) or the [CodeSandbox examples](https://dowjones.github.io/react-dropdown-tree-select/?path=/docs/guides-codesandbox-examples--docs).
 
 ### I do not want the default styles, do I need to fork the project?
 
@@ -765,19 +851,27 @@ npm i
 yarn install
 ```
 
-You can then run following scripts for local development
+You can then run following scripts for local development (Node 18, `yarn install --ignore-engines`)
 
 ```
-npm run demo  // local demo, watches and rebuilds on changes
+yarn storybook        // Storybook on http://localhost:6006, with hot reload
 
-npm test  // test your changes
+yarn test             // ava + @testing-library/react tests
 
-npm lint  // fixes anything that can be fixed and reports remaining errors
+yarn test:cov         // test coverage
 
-npm run test:cov  // test coverage
+yarn lint             // fixes anything that can be fixed and reports remaining errors
+
+yarn typecheck        // type-checks the sources, stories and type-level compat tests
+
+yarn build            // UMD bundles, styles and type declarations in dist/
+
+yarn build-storybook  // static Storybook in storybook-static/ (`yarn build:docs` builds the gh-pages site in docs-dist/)
+
+yarn bench            // 100k-node TreeManager benchmark
 ```
 
-**Note:** If your browser doesn't hot reload or reflect changes during `npm run demo`, then delete `docs/bundle.js` and try again. Before submitting final PR, run `npm run build:docs` to build the bundle.js file again.
+The docs site is the Storybook (`stories/`, `.storybook/`), deployed to GitHub Pages by the `Docs` workflow on every push to `main`.
 
 ## License
 
