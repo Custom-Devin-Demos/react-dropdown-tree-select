@@ -1,44 +1,46 @@
-import { shallow } from 'enzyme'
+import { render } from '@testing-library/react'
 import React from 'react'
 import test from 'ava'
-import toJson from 'enzyme-to-json'
 
 import Tags from './index'
 import Input from '../input'
+import { InternalTreeNode } from '../types'
+
+const noop = () => {}
+const tagsOf = (tags: Partial<InternalTreeNode>[]) => tags as InternalTreeNode[]
 
 test('renders tags', t => {
-  const tags = [
+  const tags = tagsOf([
     { _id: 'i1', label: 'l1' },
     { _id: 'i2', label: 'l2' },
-  ]
-  const wrapper = toJson(
-    shallow(
-      <Tags tags={tags}>
-        <Input />
-      </Tags>
-    )
+  ])
+  const { container } = render(
+    <Tags tags={tags} onTagRemove={noop}>
+      <Input onInputChange={noop} />
+    </Tags>
   )
-  t.snapshot(wrapper)
+  t.is(container.querySelectorAll('.tag').length, 2)
+  t.truthy(container.querySelector('.tag-list > li:last-child > input.search'))
+  t.snapshot(container.innerHTML)
 })
 
 test('renders tags when no tags are passed', t => {
-  const wrapper = toJson(
-    shallow(
-      <Tags>
-        <Input />
-      </Tags>
-    )
+  const { container } = render(
+    <Tags onTagRemove={noop}>
+      <Input onInputChange={noop} />
+    </Tags>
   )
-  t.snapshot(wrapper)
+  t.is(container.querySelectorAll('.tag').length, 0)
+  t.truthy(container.querySelector('input.search'))
 })
 
 test('renders tags when no tags are passed nor Input', t => {
-  const wrapper = toJson(shallow(<Tags />))
-  t.snapshot(wrapper)
+  const { container } = render(<Tags onTagRemove={noop} />)
+  t.is((container.querySelector('.placeholder') as HTMLElement).textContent, 'Choose...')
 })
 
 test('should render data attributes', t => {
-  const tags = [
+  const tags = tagsOf([
     {
       _id: 'i1',
       label: 'l1',
@@ -48,30 +50,20 @@ test('should render data attributes', t => {
         last: 'smith',
       },
     },
-  ]
+  ])
 
-  const wrapper = toJson(
-    shallow(
-      <Tags tags={tags}>
-        <Input />
-      </Tags>
-    )
-  )
-
-  t.snapshot(wrapper)
+  const { container } = render(<Tags tags={tags} onTagRemove={noop} />)
+  const item = container.querySelector('.tag-item.test') as HTMLElement
+  t.is(item.getAttribute('data-first'), 'john')
+  t.is(item.getAttribute('data-last'), 'smith')
 })
 
 test('should render the tagLabel instead of label when provided', t => {
-  const tags = [
+  const tags = tagsOf([
     { _id: 'i1', label: 'l1', tagLabel: 'custom label' },
     { _id: 'i2', label: 'l2' },
-  ]
-  const wrapper = toJson(
-    shallow(
-      <Tags tags={tags}>
-        <Input />
-      </Tags>
-    )
-  )
-  t.snapshot(wrapper)
+  ])
+  const { container } = render(<Tags tags={tags} onTagRemove={noop} />)
+  const labels = Array.from(container.querySelectorAll('.tag')).map(n => n.getAttribute('aria-label'))
+  t.deepEqual(labels, ['custom label', 'l2'])
 })

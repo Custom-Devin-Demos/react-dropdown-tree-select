@@ -1,25 +1,17 @@
-import { mount } from 'enzyme'
+import { render } from '@testing-library/react'
 import axe from 'axe-core'
 
-let axeWrapper
-export function mountToDoc(reactElm) {
-  if (!axeWrapper) {
-    axeWrapper = document.createElement('main')
-    document.body.appendChild(axeWrapper)
-  }
-
-  const container = mount(reactElm)
-  axeWrapper.innerHTML = ''
-  axeWrapper.appendChild(container.getDOMNode())
+export function mountToDoc(reactElm: React.ReactElement) {
+  const { container } = render(reactElm)
   return container
 }
 
-export function run(domNode, rules = {}) {
+export function run(domNode: Element, rules: Record<string, { enabled: boolean }> = {}) {
   const config = {
     rules,
   }
 
-  return new Promise(resolve => {
+  return new Promise<{ error: Error | null; violations: axe.Result[] }>(resolve => {
     axe.run(domNode, config, (error, { violations }) => {
       resolve({ error, violations })
     })

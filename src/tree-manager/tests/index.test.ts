@@ -1,5 +1,6 @@
 import test from 'ava'
 import TreeManager from '..'
+import { TreeNode } from '../../types'
 
 test('should not mutate input', t => {
   const expected = {
@@ -496,7 +497,8 @@ test('should get matching nodes when using custom search predicate', t => {
       },
     ],
   }
-  const searchPredicate = (node, term) => node.customField && node.customField.toLowerCase().indexOf(term) >= 0
+  const searchPredicate = (node: TreeNode, term: string) =>
+    node.customField && node.customField.toLowerCase().indexOf(term) >= 0
   const manager = new TreeManager({ data: tree, searchPredicate })
   const { allNodesHidden, tree: matchTree } = manager.filterTree('tEaPoT')
   t.false(allNodesHidden)

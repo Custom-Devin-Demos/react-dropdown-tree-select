@@ -129,7 +129,7 @@ Visit [unpkg.com](https://unpkg.com/#/) to see other options.
 
 ### Peer Dependencies
 
-In order to avoid version conflicts in your project, you must specify and install [react](https://www.npmjs.com/package/react), [react-dom](https://www.npmjs.com/package/react-dom) as [peer dependencies](https://nodejs.org/en/blog/npm/peer-dependencies/). Note that NPM(version 4-6) doesn't install peer dependencies automatically. Instead it will show you a warning message with instructions on how to install them. If using Npm 7.X.X version, peer dependencies will be installed automatically.
+In order to avoid version conflicts in your project, you must specify and install [react](https://www.npmjs.com/package/react), [react-dom](https://www.npmjs.com/package/react-dom) as [peer dependencies](https://nodejs.org/en/blog/npm/peer-dependencies/). Supported versions are React and ReactDOM `^16.8.0 || ^17.0.0 || ^18.0.0` (the component is built with hooks, and is `StrictMode` and concurrent rendering safe on React 18). Note that NPM(version 4-6) doesn't install peer dependencies automatically. Instead it will show you a warning message with instructions on how to install them. If using Npm 7.X.X version, peer dependencies will be installed automatically.
 
 If you're using the UMD builds, you'd also need to install the peer dependencies in your application:
 
@@ -511,12 +511,28 @@ The dropdown renders only visible content and skips any nodes that are going to 
 
 ~~Planned feature: Use [react-virtualized](https://github.com/bvaughn/react-virtualized) to take this to the next level.~~ The search tree now uses infinite scroll, limiting search results to 100 items initially (more load seamlessly as you scroll) - this results in super fast rendering even with large number of nodes (see [#80](https://github.com/dowjones/react-dropdown-tree-select/issues/80)).
 
+### Avoiding re-initialization on parent re-renders
+
+The component builds its internal tree state from `data` once and only rebuilds it when `data` (by reference), `mode`, `showPartiallySelected`, `searchPredicate` or `id` change. Re-rendering the parent with the same `data` reference is cheap and keeps the internal state (expanded nodes, search, keyboard focus) intact.
+
+Passing a new `data` reference (e.g. building the array inline in `render`) re-initializes the tree from the new data: checked/expanded state is taken from the new data, while the keyboard focus is preserved. Keep `data` referentially stable (e.g. with `useMemo` or state) when the tree has not changed.
+
+> Prior to the hooks rewrite, the component rebuilt its tree on every parent re-render regardless of whether `data` changed.
+
 ### Reducing costly DOM manipulations
 
 The tree tries to minimize the DOM manipulations as much as possible. E.g., during searching, the non-matching nodes are simply `hidden` and css adjusted on remaining to create the perception of a new filtered list.
 Node toggling also achieves the expand/collapse effect by manipulating css classes instead of creating new tree with filtered out nodes.
 
 ## FAQ
+
+### Why do generated ids look different on React 18?
+
+When no `id` prop is passed, an id is generated for each instance and used as a prefix for node ids (`<id>-0`, `<id>-0-1`, ...). On React 18 it is derived from [`React.useId`](https://react.dev/reference/react/useId) (e.g. `rdtsr0`), which keeps ids stable between server rendering and hydration. On React 16.8/17 the previous incremental format (`rdts1`, `rdts2`, ...) is used. Pass an explicit `id` if you need predictable ids.
+
+### Can I still access the instance via `ref`?
+
+Yes. The component is a function component, but a `ref` still exposes the previously public instance members: `node` (the root element), `searchInput`, `keepDropdownActive` and `handleClick()` (toggles the dropdown).
 
 ### How do I change the placeholder text?
 

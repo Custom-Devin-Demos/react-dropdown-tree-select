@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react'
+import React, { memo } from 'react'
 import PropTypes from 'prop-types'
 import Tag from '../tag'
 import { getDataset } from '../utils'
@@ -48,27 +48,24 @@ export interface TagsProps {
   clientId?: string
 }
 
-class Tags extends PureComponent<TagsProps> {
-  static propTypes = {
-    tags: PropTypes.array,
-    onTagRemove: PropTypes.func,
-    readOnly: PropTypes.bool,
-    disabled: PropTypes.bool,
-    texts: PropTypes.object,
-    children: PropTypes.node,
-  }
+const Tags = ({ tags, onTagRemove, texts = {}, disabled, readOnly, children }: TagsProps) => {
+  const lastItem = children || <span className="placeholder">{texts.placeholder || 'Choose...'}</span>
 
-  render() {
-    const { tags, onTagRemove, texts = {}, disabled, readOnly, children } = this.props
-    const lastItem = children || <span className="placeholder">{texts.placeholder || 'Choose...'}</span>
-
-    return (
-      <ul className="tag-list">
-        {getTags(tags, onTagRemove, readOnly, disabled, texts.labelRemove)}
-        <li className="tag-item">{lastItem}</li>
-      </ul>
-    )
-  }
+  return (
+    <ul className="tag-list">
+      {getTags(tags, onTagRemove, readOnly, disabled, texts.labelRemove)}
+      <li className="tag-item">{lastItem}</li>
+    </ul>
+  )
 }
 
-export default Tags
+Tags.propTypes = {
+  tags: PropTypes.array,
+  onTagRemove: PropTypes.func,
+  readOnly: PropTypes.bool,
+  disabled: PropTypes.bool,
+  texts: PropTypes.object,
+  children: PropTypes.node,
+}
+
+export default memo(Tags)

@@ -7,389 +7,186 @@
  * see https://github.com/dowjones/react-dropdown-tree-select
  */
 import PropTypes from 'prop-types'
-import React, { Component } from 'react'
+import React, { forwardRef, useImperativeHandle } from 'react'
 
-import { isOutsideClick, clientIdGenerator } from './utils'
 import Input from './input'
 import Tags from './tags'
 import Trigger from './trigger'
 import Tree from './tree'
-import TreeManager from './tree-manager'
-import keyboardNavigation from './tree-manager/keyboardNavigation'
+import useDropdownTreeSelect from './hooks/useDropdownTreeSelect'
 
 import './index.css'
 import { getAriaLabel } from './a11y'
-import { DropdownTreeSelectProps, InternalTreeNode, NodeAction, TreeNodeMap } from './types'
+import { DropdownTreeSelectProps, TextProps } from './types'
 
 export * from './types'
 
-interface DropdownTreeSelectComponentState {
-  searchModeOn?: boolean
-  currentFocus?: string | null
-  showDropdown?: boolean
-  allNodesHidden?: boolean
-  tree?: TreeNodeMap
-  tags?: InternalTreeNode[]
+/** Instance members exposed through `ref` (kept for backwards compatibility with the former class component) */
+export interface DropdownTreeSelectHandle {
+  readonly node: HTMLDivElement
+  readonly searchInput: HTMLInputElement
+  keepDropdownActive: boolean
+  handleClick: (e?: unknown, callback?: () => void) => void
 }
 
-class DropdownTreeSelect extends Component<DropdownTreeSelectProps, DropdownTreeSelectComponentState> {
-  declare node: HTMLDivElement
-  declare searchInput: HTMLInputElement
-  declare keepDropdownActive: boolean
-  declare treeManager: TreeManager
-  declare clientId: string
+const EMPTY_TEXTS: TextProps = {}
 
-  static propTypes = {
-    data: PropTypes.oneOfType([PropTypes.object, PropTypes.array]).isRequired,
-    clearSearchOnChange: PropTypes.bool,
-    keepTreeOnSearch: PropTypes.bool,
-    keepChildrenOnSearch: PropTypes.bool,
-    keepOpenOnSelect: PropTypes.bool,
-    texts: PropTypes.shape({
-      placeholder: PropTypes.string,
-      inlineSearchPlaceholder: PropTypes.string,
-      noMatches: PropTypes.string,
-      label: PropTypes.string,
-      labelRemove: PropTypes.string,
+const DropdownTreeSelect = forwardRef<DropdownTreeSelectHandle, DropdownTreeSelectProps>(function DropdownTreeSelect(
+  props,
+  ref
+) {
+  const {
+    disabled,
+    readOnly,
+    mode,
+    texts = EMPTY_TEXTS,
+    inlineSearchInput = false,
+    tabIndex = 0,
+    className,
+    keepTreeOnSearch,
+    keepChildrenOnSearch,
+    showPartiallySelected,
+  } = props
+
+  const {
+    clientId,
+    showDropdown,
+    searchModeOn,
+    activeDescendant,
+    allNodesHidden,
+    tree,
+    tags,
+    treeVersion,
+    nodeRef,
+    searchInputRef,
+    keepDropdownActiveRef,
+    handleClick,
+    onInputChange,
+    onInputFocus,
+    onInputBlur,
+    onKeyboardKeyDown,
+    onTrigger,
+    onTagRemove,
+    onAction,
+    onCheckboxChange,
+    onNodeToggle,
+  } = useDropdownTreeSelect(props)
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      get node() {
+        return nodeRef.current as HTMLDivElement
+      },
+      get searchInput() {
+        return searchInputRef.current as HTMLInputElement
+      },
+      get keepDropdownActive() {
+        return keepDropdownActiveRef.current
+      },
+      set keepDropdownActive(value: boolean) {
+        keepDropdownActiveRef.current = value
+      },
+      handleClick,
     }),
-    showDropdown: PropTypes.oneOf(['default', 'initial', 'always']),
-    className: PropTypes.string,
-    onChange: PropTypes.func,
-    onAction: PropTypes.func,
-    onNodeToggle: PropTypes.func,
-    onFocus: PropTypes.func,
-    onBlur: PropTypes.func,
-    mode: PropTypes.oneOf(['multiSelect', 'simpleSelect', 'radioSelect', 'hierarchical']),
-    showPartiallySelected: PropTypes.bool,
-    disabled: PropTypes.bool,
-    readOnly: PropTypes.bool,
-    id: PropTypes.string,
-    searchPredicate: PropTypes.func,
-    inlineSearchInput: PropTypes.bool,
-    tabIndex: PropTypes.number,
-    disablePoppingOnBackspace: PropTypes.bool,
-  }
+    [nodeRef, searchInputRef, keepDropdownActiveRef, handleClick]
+  )
 
-  static defaultProps = {
-    onAction: () => {},
-    onFocus: () => {},
-    onBlur: () => {},
-    onChange: () => {},
-    texts: {},
-    showDropdown: 'default',
-    inlineSearchInput: false,
-    tabIndex: 0,
-    disablePoppingOnBackspace: false,
-  }
+  const commonProps = { disabled, readOnly, activeDescendant, texts, mode, clientId }
 
-  constructor(props: DropdownTreeSelectProps) {
-    super(props)
-    this.state = {
-      searchModeOn: false,
-      currentFocus: undefined,
-    }
-    this.clientId = props.id || clientIdGenerator.get(this)
-  }
+  const searchInput = (
+    <Input
+      inputRef={searchInputRef}
+      onInputChange={onInputChange}
+      onFocus={onInputFocus}
+      onBlur={onInputBlur}
+      onKeyDown={onKeyboardKeyDown}
+      {...commonProps}
+      inlineSearchInput={inlineSearchInput}
+    />
+  )
 
-  initNewProps = ({ data, mode, showDropdown, showPartiallySelected, searchPredicate }: DropdownTreeSelectProps) => {
-    this.treeManager = new TreeManager({
-      data,
-      mode,
-      showPartiallySelected,
-      rootPrefixId: this.clientId,
-      searchPredicate,
-    })
-    this.setState(prevState => {
-      const currentFocusNode = prevState.currentFocus && this.treeManager.getNodeById(prevState.currentFocus)
-      if (currentFocusNode) {
-        currentFocusNode._focused = true
-      }
-      return {
-        showDropdown: /initial|always/.test(showDropdown as string) || prevState.showDropdown === true,
-        ...this.treeManager.getTreeAndTags(),
-      }
-    })
-  }
+  const ariaAttributes = mode === 'radioSelect' ? { role: 'radiogroup', ...getAriaLabel(texts.label) } : {}
 
-  resetSearchState = () => {
-    // clear the search criteria and avoid react controlled/uncontrolled warning
-    if (this.searchInput) {
-      this.searchInput.value = ''
-    }
-
-    return {
-      tree: this.treeManager.restoreNodes(), // restore the tree to its pre-search state
-      searchModeOn: false,
-      allNodesHidden: false,
-    }
-  }
-
-  UNSAFE_componentWillMount() {
-    this.initNewProps(this.props)
-  }
-
-  componentWillUnmount() {
-    document.removeEventListener('click', this.handleOutsideClick, false)
-  }
-
-  UNSAFE_componentWillReceiveProps(nextProps: DropdownTreeSelectProps) {
-    this.initNewProps(nextProps)
-  }
-
-  handleClick = (e?: unknown, callback?: () => void) => {
-    this.setState(prevState => {
-      // keep dropdown active when typing in search box
-      const showDropdown = this.props.showDropdown === 'always' || this.keepDropdownActive || !prevState.showDropdown
-
-      // register event listeners only if there is a state change
-      if (showDropdown !== prevState.showDropdown) {
-        if (showDropdown) {
-          document.addEventListener('click', this.handleOutsideClick, false)
-        } else {
-          document.removeEventListener('click', this.handleOutsideClick, false)
-        }
-      }
-
-      if (showDropdown) this.props.onFocus!()
-      else this.props.onBlur!()
-
-      return !showDropdown ? { showDropdown, ...this.resetSearchState() } : { showDropdown }
-    }, callback)
-  }
-
-  handleOutsideClick = (e: Event) => {
-    if (this.props.showDropdown === 'always' || !isOutsideClick(e, this.node)) {
-      return
-    }
-
-    this.handleClick()
-  }
-
-  onInputChange = (value: string) => {
-    const searchModeOn = value.length > 0
-    if (!searchModeOn) {
-      this.setState(this.resetSearchState())
-    } else {
-      const { allNodesHidden, tree } = this.treeManager.filterTree(
-        value,
-        this.props.keepTreeOnSearch,
-        this.props.keepChildrenOnSearch
-      )
-      this.setState({
-        tree,
-        searchModeOn,
-        allNodesHidden,
-      })
-    }
-  }
-
-  onTagRemove = (id: string, isKeyboardEvent: boolean) => {
-    const { tags: prevTags } = this.state
-    this.onCheckboxChange(id, false, tags => {
-      if (!isKeyboardEvent) return
-
-      keyboardNavigation.getNextFocusAfterTagDelete(id, prevTags, tags, this.searchInput).focus()
-    })
-  }
-
-  onNodeToggle = (id: string) => {
-    this.treeManager.toggleNodeExpandState(id)
-    const tree = this.state.searchModeOn ? this.treeManager.matchTree : this.treeManager.tree
-    this.setState({ tree })
-    typeof this.props.onNodeToggle === 'function' && this.props.onNodeToggle(this.treeManager.getNodeById(id))
-  }
-
-  onCheckboxChange = (id: string, checked: boolean, callback?: (tags: InternalTreeNode[]) => void) => {
-    const { mode, keepOpenOnSelect, clearSearchOnChange } = this.props
-    const { currentFocus, searchModeOn } = this.state
-    this.treeManager.setNodeCheckedState(id, checked)
-    let tags = this.treeManager.tags
-    const isSingleSelect = ['simpleSelect', 'radioSelect'].indexOf(mode as string) > -1
-    const showDropdown = isSingleSelect && !keepOpenOnSelect ? false : this.state.showDropdown
-    const currentFocusNode = currentFocus ? this.treeManager.getNodeById(currentFocus) : undefined
-    const node = this.treeManager.getNodeById(id)
-
-    if (!tags.length) {
-      this.treeManager.restoreDefaultValues()
-      tags = this.treeManager.tags
-    }
-
-    const tree = searchModeOn ? this.treeManager.matchTree : this.treeManager.tree
-    const nextState: DropdownTreeSelectComponentState = {
-      tree,
-      tags,
-      showDropdown,
-      currentFocus: id,
-    }
-
-    if ((isSingleSelect && !showDropdown) || clearSearchOnChange) {
-      Object.assign(nextState, this.resetSearchState())
-    }
-
-    if (isSingleSelect && !showDropdown) {
-      document.removeEventListener('click', this.handleOutsideClick, false)
-    }
-
-    keyboardNavigation.adjustFocusedProps(currentFocusNode, node)
-    this.setState(nextState, () => {
-      callback && callback(tags)
-    })
-    this.props.onChange!(node, tags)
-  }
-
-  onAction = (nodeId: string, action: NodeAction) => {
-    this.props.onAction!(this.treeManager.getNodeById(nodeId), action)
-  }
-
-  onInputFocus = () => {
-    this.keepDropdownActive = true
-  }
-
-  onInputBlur = () => {
-    this.keepDropdownActive = false
-  }
-
-  onTrigger = (e: React.MouseEvent | React.KeyboardEvent) => {
-    this.handleClick(e, () => {
-      // If the dropdown is shown after key press, focus the input
-      if (this.state.showDropdown) {
-        this.searchInput.focus()
-      }
-    })
-  }
-
-  onKeyboardKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
-    const { readOnly, mode, disablePoppingOnBackspace } = this.props
-    const { showDropdown, tags, searchModeOn, currentFocus } = this.state
-    const tm = this.treeManager
-    const tree = (searchModeOn ? tm.matchTree : tm.tree) as TreeNodeMap
-
-    if (!showDropdown && (keyboardNavigation.isValidKey(e.key, false) || /^\w$/i.test(e.key))) {
-      // Triggers open of dropdown and retriggers event
-      e.persist()
-      this.handleClick(null, () => this.onKeyboardKeyDown(e))
-      if (/\w/i.test(e.key)) return
-    } else if (showDropdown && keyboardNavigation.isValidKey(e.key, true)) {
-      const newFocus = tm.handleNavigationKey(
-        currentFocus,
-        tree,
-        e.key,
-        readOnly,
-        !searchModeOn,
-        this.onCheckboxChange,
-        this.onNodeToggle
-      )
-      if (newFocus !== currentFocus) {
-        this.setState({ currentFocus: newFocus }, () => {
-          const ele = document && document.getElementById(`${newFocus}_li`)
-          ele && ele.scrollIntoView()
-        })
-      }
-    } else if (showDropdown && ['Escape', 'Tab'].indexOf(e.key) > -1) {
-      if (mode === 'simpleSelect' && tree.has(currentFocus as string)) {
-        this.onCheckboxChange(currentFocus as string, true)
-      } else {
-        // Triggers close
-        this.keepDropdownActive = false
-        this.handleClick()
-      }
-      return
-    } else if (
-      !disablePoppingOnBackspace &&
-      e.key === 'Backspace' &&
-      tags!.length &&
-      this.searchInput.value.length === 0
-    ) {
-      const lastTag = tags!.pop()!
-      this.onCheckboxChange(lastTag._id, false)
-    } else {
-      return
-    }
-    e.preventDefault()
-  }
-
-  getAriaAttributes = () => {
-    const { mode, texts } = this.props
-
-    if (mode !== 'radioSelect') return {}
-
-    return {
-      role: 'radiogroup',
-      ...getAriaLabel(texts!.label),
-    }
-  }
-
-  render() {
-    const { disabled, readOnly, mode, texts, inlineSearchInput, tabIndex } = this.props
-    const { showDropdown, currentFocus, tags } = this.state
-
-    const activeDescendant = currentFocus ? `${currentFocus}_li` : undefined
-
-    const commonProps = { disabled, readOnly, activeDescendant, texts, mode, clientId: this.clientId }
-
-    const searchInput = (
-      <Input
-        inputRef={el => {
-          this.searchInput = el as HTMLInputElement
-        }}
-        onInputChange={this.onInputChange}
-        onFocus={this.onInputFocus}
-        onBlur={this.onInputBlur}
-        onKeyDown={this.onKeyboardKeyDown}
-        {...commonProps}
-        inlineSearchInput={inlineSearchInput}
-      />
-    )
-    return (
+  return (
+    <div
+      id={clientId}
+      className={[className && className, 'react-dropdown-tree-select'].filter(Boolean).join(' ')}
+      ref={nodeRef}
+    >
       <div
-        id={this.clientId}
-        className={[this.props.className && this.props.className, 'react-dropdown-tree-select']
+        className={['dropdown', mode === 'simpleSelect' && 'simple-select', mode === 'radioSelect' && 'radio-select']
           .filter(Boolean)
           .join(' ')}
-        ref={node => {
-          this.node = node as HTMLDivElement
-        }}
       >
-        <div
-          className={['dropdown', mode === 'simpleSelect' && 'simple-select', mode === 'radioSelect' && 'radio-select']
-            .filter(Boolean)
-            .join(' ')}
-        >
-          <Trigger
-            onTrigger={this.onTrigger}
-            showDropdown={showDropdown}
-            {...commonProps}
-            tags={tags}
-            tabIndex={tabIndex}
-          >
-            <Tags tags={tags} onTagRemove={this.onTagRemove} {...commonProps}>
-              {!inlineSearchInput && searchInput}
-            </Tags>
-          </Trigger>
-          {showDropdown && (
-            <div className="dropdown-content" {...this.getAriaAttributes()}>
-              {inlineSearchInput && searchInput}
-              {this.state.allNodesHidden ? (
-                <span className="no-matches">{texts!.noMatches || 'No matches found'}</span>
-              ) : (
-                <Tree
-                  data={this.state.tree!}
-                  keepTreeOnSearch={this.props.keepTreeOnSearch}
-                  keepChildrenOnSearch={this.props.keepChildrenOnSearch}
-                  searchModeOn={this.state.searchModeOn}
-                  onAction={this.onAction}
-                  onCheckboxChange={this.onCheckboxChange}
-                  onNodeToggle={this.onNodeToggle}
-                  showPartiallySelected={this.props.showPartiallySelected}
-                  {...commonProps}
-                />
-              )}
-            </div>
-          )}
-        </div>
+        <Trigger onTrigger={onTrigger} showDropdown={showDropdown} {...commonProps} tags={tags} tabIndex={tabIndex}>
+          <Tags tags={tags} onTagRemove={onTagRemove} {...commonProps}>
+            {!inlineSearchInput && searchInput}
+          </Tags>
+        </Trigger>
+        {showDropdown && (
+          <div className="dropdown-content" {...ariaAttributes}>
+            {inlineSearchInput && searchInput}
+            {allNodesHidden ? (
+              <span className="no-matches">{texts.noMatches || 'No matches found'}</span>
+            ) : (
+              <Tree
+                data={tree}
+                treeVersion={treeVersion}
+                keepTreeOnSearch={keepTreeOnSearch}
+                keepChildrenOnSearch={keepChildrenOnSearch}
+                searchModeOn={searchModeOn}
+                onAction={onAction}
+                onCheckboxChange={onCheckboxChange}
+                onNodeToggle={onNodeToggle}
+                showPartiallySelected={showPartiallySelected}
+                {...commonProps}
+              />
+            )}
+          </div>
+        )}
       </div>
-    )
-  }
+    </div>
+  )
+})
+
+const propTypes = {
+  data: PropTypes.oneOfType([PropTypes.object, PropTypes.array]).isRequired,
+  clearSearchOnChange: PropTypes.bool,
+  keepTreeOnSearch: PropTypes.bool,
+  keepChildrenOnSearch: PropTypes.bool,
+  keepOpenOnSelect: PropTypes.bool,
+  texts: PropTypes.shape({
+    placeholder: PropTypes.string,
+    inlineSearchPlaceholder: PropTypes.string,
+    noMatches: PropTypes.string,
+    label: PropTypes.string,
+    labelRemove: PropTypes.string,
+  }),
+  showDropdown: PropTypes.oneOf(['default', 'initial', 'always']),
+  className: PropTypes.string,
+  onChange: PropTypes.func,
+  onAction: PropTypes.func,
+  onNodeToggle: PropTypes.func,
+  onFocus: PropTypes.func,
+  onBlur: PropTypes.func,
+  mode: PropTypes.oneOf(['multiSelect', 'simpleSelect', 'radioSelect', 'hierarchical']),
+  showPartiallySelected: PropTypes.bool,
+  disabled: PropTypes.bool,
+  readOnly: PropTypes.bool,
+  id: PropTypes.string,
+  searchPredicate: PropTypes.func,
+  inlineSearchInput: PropTypes.bool,
+  tabIndex: PropTypes.number,
+  disablePoppingOnBackspace: PropTypes.bool,
 }
+
+DropdownTreeSelect.propTypes = propTypes as React.WeakValidationMap<
+  DropdownTreeSelectProps & React.RefAttributes<DropdownTreeSelectHandle>
+>
+
+/** Type of the component instance exposed through `ref`, e.g. `useRef<DropdownTreeSelect>(null)` */
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+type DropdownTreeSelect = DropdownTreeSelectHandle
 
 export default DropdownTreeSelect

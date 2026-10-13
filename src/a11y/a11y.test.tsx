@@ -1,7 +1,10 @@
-import test from 'ava'
+import anyTest, { TestInterface } from 'ava'
 import React from 'react'
 import DropdownTreeSelect from '../index'
 import { mountToDoc, run } from './a11y.utils'
+import { TreeNodeProps } from '../types'
+
+const test = anyTest as TestInterface<{ tree: TreeNodeProps[] }>
 
 test.beforeEach(t => {
   t.context.tree = [
@@ -49,7 +52,7 @@ test.beforeEach(t => {
 
 test('has no a11y exceptions', async t => {
   const { tree } = t.context
-  const component = mountToDoc(
+  const domNode = mountToDoc(
     <div>
       <DropdownTreeSelect data={tree} showDropdown="initial" texts={{ label: 'test' }} />
       <DropdownTreeSelect data={tree} showDropdown="initial" disabled texts={{ label: 'test' }} />
@@ -59,7 +62,6 @@ test('has no a11y exceptions', async t => {
       <DropdownTreeSelect data={tree} showDropdown="initial" mode="hierarchical" texts={{ label: 'test' }} />
     </div>
   )
-  const domNode = component.getDOMNode()
   const { error, violations } = await run(domNode)
   t.is(error, null, JSON.stringify(error, null, 2))
   t.is(violations.length, 0, JSON.stringify(violations, null, 2))

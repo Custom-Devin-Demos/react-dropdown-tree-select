@@ -137,7 +137,7 @@ test('flattens tree with no root', t => {
   }
 
   const { list } = flattenTree({ tree })
-  t.deepEqual(mapToObject(list), expected)
+  t.deepEqual(mapToObject(list) as unknown, expected)
 })
 
 test('flattens tree with root', t => {
@@ -199,7 +199,7 @@ test('flattens tree with root', t => {
   }
 
   const { list } = flattenTree({ tree })
-  t.deepEqual(mapToObject(list), expected)
+  t.deepEqual(mapToObject(list) as unknown, expected)
 })
 
 test('sets default values', t => {
@@ -354,7 +354,7 @@ test('sets default values', t => {
 
   const { defaultValues, list } = flattenTree({ tree })
   t.deepEqual(defaultValues, expectedDefaultValues)
-  t.deepEqual(mapToObject(list), expectedTree)
+  t.deepEqual(mapToObject(list) as unknown, expectedTree)
 })
 
 test('does not check parent with empty children when showing partial state', t => {
@@ -407,5 +407,5 @@ test('does not check parent with empty children when showing partial state', t =
   }
 
   const { list } = flattenTree({ tree, simple: false, showPartialState: true })
-  t.deepEqual(mapToObject(list), expectedTree)
+  t.deepEqual(mapToObject(list) as unknown, expectedTree)
 })

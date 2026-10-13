@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types'
-import React, { PureComponent } from 'react'
+import React, { memo } from 'react'
 
 import Action from './action'
 import { isEmpty } from '../utils'
@@ -13,22 +13,22 @@ export interface ActionsProps {
   readOnly?: boolean
 }
 
-class Actions extends PureComponent<ActionsProps> {
-  static propTypes = {
-    id: PropTypes.string.isRequired,
-    actions: PropTypes.array,
-  }
+const Actions = ({ actions, id, ...rest }: ActionsProps) => {
+  if (isEmpty(actions)) return null
 
-  render() {
-    const { actions, id, ...rest } = this.props
-
-    if (isEmpty(actions)) return null
-
-    return actions!.map((a, idx) => {
-      const actionId = a.id || `action-${idx}`
-      return <Action key={actionId} {...rest} {...a} actionData={{ action: { ...a, id: actionId }, nodeId: id }} />
-    })
-  }
+  return (
+    <>
+      {actions!.map((a, idx) => {
+        const actionId = a.id || `action-${idx}`
+        return <Action key={actionId} {...rest} {...a} actionData={{ action: { ...a, id: actionId }, nodeId: id }} />
+      })}
+    </>
+  )
 }
 
-export default Actions
+Actions.propTypes = {
+  id: PropTypes.string.isRequired,
+  actions: PropTypes.array,
+}
+
+export default memo(Actions)

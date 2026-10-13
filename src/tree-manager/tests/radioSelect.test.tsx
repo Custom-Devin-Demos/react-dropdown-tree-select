@@ -1,34 +1,47 @@
 import test from 'ava'
-import React from 'react'
-import { mount } from 'enzyme'
+import { cleanup, fireEvent, renderDropdown } from '../../test-utils'
 import TreeManager from '..'
-import DropdownTreeSelect from '../../'
 
 const dropdownId = 'rdts'
 const tree = ['nodeA', 'nodeB', 'nodeC'].map(nv => ({ id: nv, label: nv, value: nv }))
 
 test('should render radio inputs with shared name', t => {
-  const wrapper = mount(<DropdownTreeSelect id={dropdownId} data={tree} mode="radioSelect" showDropdown="initial" />)
+  const { $$ } = renderDropdown({ id: dropdownId, data: tree, mode: 'radioSelect', showDropdown: 'initial' })
 
-  const inputs = wrapper.find('.dropdown-content').find(`input[type="radio"][name="${dropdownId}"]`)
+  const inputs = $$(`.dropdown-content input[type="radio"][name="${dropdownId}"]`)
   t.deepEqual(inputs.length, 3)
 })
 
 test('hides dropdown onChange for radioSelect', t => {
-  const wrapper = mount(<DropdownTreeSelect id={dropdownId} data={tree} showDropdown="initial" mode="radioSelect" />)
-  wrapper.instance().onCheckboxChange('nodeA', true)
-  t.false(wrapper.state().searchModeOn)
-  t.false(wrapper.state().allNodesHidden)
-  t.false(wrapper.state().showDropdown)
+  const r = renderDropdown({ id: dropdownId, data: tree, showDropdown: 'initial', mode: 'radioSelect' })
+  r.search('node')
+  fireEvent.click(r.$('#nodeA') as HTMLElement)
+  t.false(r.isOpen())
+  t.is(r.searchInput().value, '')
+  t.is(r.tags().length, 1)
+  r.handleClick()
+  t.false(r.isSearchModeOn())
+  t.truthy(r.$('.root'))
 })
 
 test('keeps dropdown open onChange for radioSelect and keepOpenOnSelect', t => {
-  const wrapper = mount(
-    <DropdownTreeSelect id={dropdownId} data={tree} showDropdown="initial" mode="radioSelect" keepOpenOnSelect />
+  const r = renderDropdown({
+    id: dropdownId,
+    data: tree,
+    showDropdown: 'initial',
+    mode: 'radioSelect',
+    keepOpenOnSelect: true,
+  })
+  fireEvent.click(r.$('#nodeA') as HTMLElement)
+  t.true(r.isOpen())
+  fireEvent.click(r.$('#nodeB') as HTMLElement)
+  t.deepEqual(
+    r.tags().map(tag => tag.getAttribute('aria-label')),
+    ['nodeB']
   )
-  wrapper.instance().onCheckboxChange('nodeA', true)
-  t.true(wrapper.state().showDropdown)
 })
+
+test.afterEach.always(cleanup)
 
 test('should deselect previous node', t => {
   const manager = new TreeManager({ data: tree, mode: 'radioSelect' })

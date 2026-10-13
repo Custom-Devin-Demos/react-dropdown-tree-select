@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react'
+import React, { memo } from 'react'
 import PropTypes from 'prop-types'
 
 export interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
@@ -15,30 +15,26 @@ export const refUpdater =
     }
   }
 
-class Checkbox extends PureComponent<CheckboxProps> {
-  static propTypes = {
-    checked: PropTypes.bool,
-    indeterminate: PropTypes.bool,
-    onChange: PropTypes.func,
-    disabled: PropTypes.bool,
-    readOnly: PropTypes.bool,
-  }
+const Checkbox = ({ checked, indeterminate = false, onChange, disabled, readOnly, ...rest }: CheckboxProps) => {
+  const isDisabled = disabled || readOnly
 
-  render() {
-    const { checked, indeterminate = false, onChange, disabled, readOnly, ...rest } = this.props
-
-    const isDisabled = disabled || readOnly
-
-    return (
-      <input
-        type="checkbox"
-        ref={refUpdater({ checked, indeterminate })}
-        onChange={onChange}
-        disabled={isDisabled}
-        {...rest}
-      />
-    )
-  }
+  return (
+    <input
+      type="checkbox"
+      ref={refUpdater({ checked, indeterminate })}
+      onChange={onChange}
+      disabled={isDisabled}
+      {...rest}
+    />
+  )
 }
 
-export default Checkbox
+Checkbox.propTypes = {
+  checked: PropTypes.bool,
+  indeterminate: PropTypes.bool,
+  onChange: PropTypes.func,
+  disabled: PropTypes.bool,
+  readOnly: PropTypes.bool,
+}
+
+export default memo(Checkbox)

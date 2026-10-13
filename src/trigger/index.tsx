@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react'
+import React, { memo, useRef } from 'react'
 import PropTypes from 'prop-types'
 
 import { getAriaLabel } from '../a11y'
@@ -19,24 +19,21 @@ export interface TriggerProps {
   children?: React.ReactNode
 }
 
-class Trigger extends PureComponent<TriggerProps> {
-  declare triggerNode: HTMLAnchorElement | null
+const Trigger = ({
+  onTrigger,
+  disabled,
+  readOnly,
+  showDropdown,
+  mode,
+  texts = {},
+  clientId,
+  tags,
+  tabIndex,
+  children,
+}: TriggerProps) => {
+  const triggerNode = useRef<HTMLAnchorElement | null>(null)
 
-  static propTypes = {
-    onTrigger: PropTypes.func,
-    disabled: PropTypes.bool,
-    readOnly: PropTypes.bool,
-    showDropdown: PropTypes.bool,
-    mode: PropTypes.oneOf(['multiSelect', 'simpleSelect', 'radioSelect', 'hierarchical']),
-    texts: PropTypes.object,
-    clientId: PropTypes.string,
-    tags: PropTypes.array,
-    tabIndex: PropTypes.number,
-  }
-
-  getAriaAttributes = () => {
-    const { mode, texts = {}, showDropdown, clientId, tags } = this.props
-
+  const getAriaAttributes = () => {
     const triggerId = `${clientId}_trigger`
     const labelledBy: string[] = []
     let labelAttributes = getAriaLabel(texts.label)
@@ -54,7 +51,7 @@ class Trigger extends PureComponent<TriggerProps> {
     const attributes: React.HTMLAttributes<HTMLAnchorElement> = {
       id: triggerId,
       role: 'button',
-      tabIndex: this.props.tabIndex,
+      tabIndex,
       'aria-haspopup': mode === 'simpleSelect' ? 'listbox' : 'tree',
       'aria-expanded': showDropdown ? 'true' : 'false',
       ...labelAttributes,
@@ -63,51 +60,57 @@ class Trigger extends PureComponent<TriggerProps> {
     return attributes
   }
 
-  handleTrigger = (event: React.MouseEvent<HTMLAnchorElement> | React.KeyboardEvent<HTMLAnchorElement>) => {
+  const handleTrigger = (event: React.MouseEvent<HTMLAnchorElement> | React.KeyboardEvent<HTMLAnchorElement>) => {
     const e = event as React.KeyboardEvent<HTMLAnchorElement>
     // Just return if triggered from keyDown and the key isn't enter, space or arrow down
     if (e.key && e.keyCode !== 13 && e.keyCode !== 32 && e.keyCode !== 40) {
       return
-    } else if (e.key && this.triggerNode && this.triggerNode !== document.activeElement) {
+    } else if (e.key && triggerNode.current && triggerNode.current !== document.activeElement) {
       // Do not trigger if not activeElement
       return
-    } else if (!this.props.showDropdown && e.keyCode === 32) {
+    } else if (!showDropdown && e.keyCode === 32) {
       // Avoid adding space to input on open
       e.preventDefault()
     }
 
     // Else this is a key press that should trigger the dropdown
-    this.props.onTrigger(e)
+    onTrigger(e)
   }
 
-  render() {
-    const { disabled, readOnly, showDropdown } = this.props
+  const dropdownTriggerClassname = [
+    'dropdown-trigger',
+    'arrow',
+    disabled && 'disabled',
+    readOnly && 'readOnly',
+    showDropdown && 'top',
+    !showDropdown && 'bottom',
+  ]
+    .filter(Boolean)
+    .join(' ')
 
-    const dropdownTriggerClassname = [
-      'dropdown-trigger',
-      'arrow',
-      disabled && 'disabled',
-      readOnly && 'readOnly',
-      showDropdown && 'top',
-      !showDropdown && 'bottom',
-    ]
-      .filter(Boolean)
-      .join(' ')
-
-    return (
-      <a
-        ref={node => {
-          this.triggerNode = node
-        }}
-        className={dropdownTriggerClassname}
-        onClick={!disabled ? this.handleTrigger : undefined}
-        onKeyDown={!disabled ? this.handleTrigger : undefined}
-        {...this.getAriaAttributes()}
-      >
-        {this.props.children}
-      </a>
-    )
-  }
+  return (
+    <a
+      ref={triggerNode}
+      className={dropdownTriggerClassname}
+      onClick={!disabled ? handleTrigger : undefined}
+      onKeyDown={!disabled ? handleTrigger : undefined}
+      {...getAriaAttributes()}
+    >
+      {children}
+    </a>
+  )
 }
 
-export default Trigger
+Trigger.propTypes = {
+  onTrigger: PropTypes.func,
+  disabled: PropTypes.bool,
+  readOnly: PropTypes.bool,
+  showDropdown: PropTypes.bool,
+  mode: PropTypes.oneOf(['multiSelect', 'simpleSelect', 'radioSelect', 'hierarchical']),
+  texts: PropTypes.object,
+  clientId: PropTypes.string,
+  tags: PropTypes.array,
+  tabIndex: PropTypes.number,
+}
+
+export default memo(Trigger)

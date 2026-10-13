@@ -1,4 +1,4 @@
-import test from 'ava'
+import anyTest, { TestInterface } from 'ava'
 import TreeManager from '..'
 import {
   grandParent,
@@ -10,6 +10,8 @@ import {
   children,
   assertTreeInExpectedState,
 } from './partial-setup'
+
+const test = anyTest as TestInterface<{ tree: any }>
 
 test.beforeEach(t => {
   t.context.tree = {

@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react'
+import React, { memo } from 'react'
 import PropTypes from 'prop-types'
 
 import { NodeAction } from '../types'
@@ -13,36 +13,29 @@ export interface ActionProps {
   [property: string]: any
 }
 
-class Action extends PureComponent<ActionProps> {
-  static propTypes = {
-    title: PropTypes.string,
-    text: PropTypes.string,
-    className: PropTypes.string,
-    actionData: PropTypes.object,
-    onAction: PropTypes.func,
-    readOnly: PropTypes.bool,
-  }
+const noop = () => {}
 
-  static defaultProps = {
-    onAction: () => {},
-  }
-
-  handleClick = () => {
-    const { onAction, actionData } = this.props
+const Action = ({ title, className, text, readOnly, onAction = noop, actionData }: ActionProps) => {
+  const handleClick = () => {
     if (onAction) {
       onAction(actionData.nodeId, actionData.action)
     }
   }
 
-  render() {
-    const { title, className, text, readOnly } = this.props
-
-    return (
-      <i title={title} className={className} onClick={!readOnly ? this.handleClick : undefined}>
-        {text}
-      </i>
-    )
-  }
+  return (
+    <i title={title} className={className} onClick={!readOnly ? handleClick : undefined}>
+      {text}
+    </i>
+  )
 }
 
-export default Action
+Action.propTypes = {
+  title: PropTypes.string,
+  text: PropTypes.string,
+  className: PropTypes.string,
+  actionData: PropTypes.object,
+  onAction: PropTypes.func,
+  readOnly: PropTypes.bool,
+}
+
+export default memo(Action)
