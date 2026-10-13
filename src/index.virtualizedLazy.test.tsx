@@ -1,5 +1,4 @@
 import test from 'ava'
-import React from 'react'
 import { renderHook } from '@testing-library/react'
 import { spy } from 'sinon'
 
